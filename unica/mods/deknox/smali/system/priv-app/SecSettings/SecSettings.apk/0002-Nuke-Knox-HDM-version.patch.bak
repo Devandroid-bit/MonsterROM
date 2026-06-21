@@ -59,8 +59,8 @@ index 4cbbc66e..704cecba 100644
 -
 -    :cond_0
 -    const-string v0, "2.0 - 95"
-+    const/4 v0, 0x0
- 
++    const-string v0, "0"
+
      return-object v0
  .end method
 -- 

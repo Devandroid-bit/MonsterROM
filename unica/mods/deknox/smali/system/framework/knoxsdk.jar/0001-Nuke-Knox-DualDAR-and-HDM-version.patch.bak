@@ -32,13 +32,13 @@ index bf2634d..99490a1 100644
  .method public static greylist getHdmVersion()Ljava/lang/String;
 -    .locals 4
 +    .locals 2
- 
+
      sget-object v0, Lcom/samsung/android/knox/hdm/HdmManager;->TAG:Ljava/lang/String;
- 
+
 @@ -43,40 +43,7 @@
- 
+
      invoke-static {v0, v1}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
- 
+
 -    const-string v0, "ro.vendor.hdm.hdm_supported_subsystem"
 -
 -    const-string v1, "none"
@@ -73,7 +73,7 @@ index bf2634d..99490a1 100644
 -
 -    :cond_0
 -    const-string v0, "2.0 - 95"
-+    const/4 v0, 0x0
++    const-string v0, "0"
  
      return-object v0
  .end method
