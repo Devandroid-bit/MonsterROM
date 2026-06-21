@@ -21,12 +21,14 @@ while IFS= read -r f; do
         LABEL="u:object_r:vendor_npu_firmware_file:s0"
     fi
 
-    LOG "- Moving /vendor/firmware/$BLOB to /vendor/firmware/SM-G996B/$BLOB"
-    EVAL "mv \"$WORK_DIR/vendor/firmware/$BLOB\" \"$WORK_DIR/vendor/firmware/SM-G996B/$BLOB\""
+    # Keep the international model's firmware at the generic path used by the
+    # kernel firmware loader.  Zero-byte placeholders plus early-init bind
+    # mounts are racy: a request_firmware() call can run before the bind and
+    # permanently leave ABOX/runtime-PM wedged.  Preserve a model-specific copy
+    # for diagnostics, while G996N is overridden conditionally by init.
+    LOG "- Copying /vendor/firmware/$BLOB to /vendor/firmware/SM-G996B/$BLOB"
+    EVAL "cp -a \"$WORK_DIR/vendor/firmware/$BLOB\" \"$WORK_DIR/vendor/firmware/SM-G996B/$BLOB\""
     SET_METADATA "vendor" "firmware/SM-G996B/$BLOB" 0 0 644 "$LABEL"
-
-    LOG "- Creating dummy /vendor/firmware/$BLOB"
-    EVAL "touch \"$WORK_DIR/vendor/firmware/$BLOB\""
 
     unset BLOB LABEL
 done < <(find "$MODPATH/vendor/firmware/SM-G996N" -type f)

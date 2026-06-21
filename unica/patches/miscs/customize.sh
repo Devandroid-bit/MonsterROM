@@ -14,9 +14,20 @@ SMALI_PATCH "system" "system/framework/framework.jar" \
 
 # Disable RescueParty
 SMALI_PATCH "system" "system/framework/services.jar" \
-    "smali/com/android/server/RescueParty.smali" "return" \
-    '-$$Nest$smisDisabled()Z' \
-    'true'
+    "smali/com/android/server/SecRescueParty.smali" "null" \
+    "executeEraseAppData(Landroid/content/Context;Ljava/lang/String;I)V"
+SMALI_PATCH "system" "system/framework/services.jar" \
+    "smali/com/android/server/SecRescueParty.smali" "null" \
+    "executeRescueRecovery(Landroid/content/Context;Ljava/lang/String;I)V"
+SMALI_PATCH "system" "system/framework/services.jar" \
+    "smali/com/android/server/SecRescueParty.smali" "null" \
+    "executeResetOthers(Landroid/content/Context;Ljava/lang/String;I)V"
+SMALI_PATCH "system" "system/framework/services.jar" \
+    "smali/com/android/server/SecRescueParty.smali" "null" \
+    "executeSecRescueLevel(Landroid/content/Context;Ljava/lang/String;I)V"
+SMALI_PATCH "system" "system/framework/services.jar" \
+    "smali/com/android/server/SecRescueParty.smali" "null" \
+    "executeWarmReboot(Landroid/content/Context;Ljava/lang/String;I)V"
 
 # Better model detection in FreecessController
 SMALI_PATCH "system" "system/framework/services.jar" \

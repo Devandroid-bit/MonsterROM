@@ -164,9 +164,13 @@ if [ "$TARGET_PLATFORM_SDK_VERSION" -lt "36" ]; then
     if [ ! "$(GET_PROP "ro.telephony.sim_slots.count")" ] && \
             ! grep -q "ro.telephony.sim_slots.count" "$WORK_DIR/vendor/bin/secril_config_svc" && \
             ! grep -q -r "config_num_physical_slots" "$WORK_DIR/vendor/overlay"; then
-        PATCHED=true
-        APPLY_PATCH "system" "system/framework/telephony-common.jar" \
-            "$MODPATH/ril/telephony-common.jar/0001-Backport-legacy-UiccController-code.patch"
+        DECODE_APK "system" "system/framework/telephony-common.jar"
+        if ! grep -q "ro.vendor.api_level" \
+                "$APKTOOL_DIR/system/framework/telephony-common.jar/smali/com/android/internal/telephony/uicc/UiccController.smali"; then
+            PATCHED=true
+            APPLY_PATCH "system" "system/framework/telephony-common.jar" \
+                "$MODPATH/ril/telephony-common.jar/0001-Backport-legacy-UiccController-code.patch"
+        fi
     fi
 fi
 
@@ -276,14 +280,15 @@ if [ "$TARGET_PLATFORM_SDK_VERSION" -lt "36" ]; then
     if [ -f "$WORK_DIR/kernel/vendor_boot.img" ]; then
         # Check for GKI devices
         EXTRACT_KERNEL_MODULES
-        if grep -q "SKY_DEFAULT" "$TMP_DIR/out/vendor_ramdisk"*; then
+        if find "$TMP_DIR/out" -maxdepth 1 -type f -name "vendor_ramdisk*" | grep -q . && \
+                grep -a -q "SKY_DEFAULT" "$TMP_DIR/out/vendor_ramdisk"* 2> /dev/null; then
             VBOOT_MISSING=false
         fi
     fi
 
     # Check for legacy devices
     EXTRACT_KERNEL_IMAGE
-    if grep -q "SKY_DEFAULT" "$TMP_DIR/out/kernel"; then
+    if [ -f "$TMP_DIR/out/kernel" ] && grep -a -q "SKY_DEFAULT" "$TMP_DIR/out/kernel" 2> /dev/null; then
         KERNEL_MISSING=false
     fi
 
@@ -332,12 +337,15 @@ fi
 # Support legacy LED Cover level
 # - Replace deprecated 'android.nfc.NfcAdapter' APIs with 'com.samsung.android.nfc.adapter.ISamsungNfcAdapter'
 if [ -f "$WORK_DIR/system/system/priv-app/LedCoverService/LedCoverService.apk" ]; then
-    if [ "$(GET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_FRAMEWORK_CONFIG_NFC_LED_COVER_LEVEL")" -ge "30" ] && \
-            [ "$(GET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_FRAMEWORK_CONFIG_NFC_LED_COVER_LEVEL")" -lt "100" ]; then
+    NFC_LED_COVER_LEVEL="$(GET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_FRAMEWORK_CONFIG_NFC_LED_COVER_LEVEL")"
+    if [[ "$NFC_LED_COVER_LEVEL" =~ ^[0-9]+$ ]] && \
+            [ "$NFC_LED_COVER_LEVEL" -ge "30" ] && \
+            [ "$NFC_LED_COVER_LEVEL" -lt "100" ]; then
         PATCHED=true
         APPLY_PATCH "system" "system/priv-app/LedCoverService/LedCoverService.apk" \
             "$MODPATH/ledcover/LedCoverService.apk/0001-Switch-to-ISamsungNfcAdapter-interface.patch"
     fi
+    unset NFC_LED_COVER_LEVEL
 fi
 
 # Upgrade Single Take models (pre-API 35)

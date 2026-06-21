@@ -68,23 +68,23 @@ ENCODE_MP4()
 }
 # ]
 
-ADD_TO_WORK_DIR "pa2qxxx" "system" \
-    "system/priv-app/wallpaper-res/wallpaper-res.apk" 0 0 644 "u:object_r:system_file:s0"
+LOG "- Using source wallpaper resources"
 DECODE_APK "system" "system/priv-app/wallpaper-res/wallpaper-res.apk"
-for f in "$APKTOOL_DIR/system/priv-app/wallpaper-res/wallpaper-res.apk/res/drawable-nodpi/dex_wallpaper_"*.webp; do
+for f in "$APKTOOL_DIR/system/priv-app/wallpaper-res/wallpaper-res.apk/res"/drawable-nodpi*/dex_wallpaper_*.webp; do
+    [ -f "$f" ] || continue
     COMPRESS_WEBP "$f"
 done
-for f in "$APKTOOL_DIR/system/priv-app/wallpaper-res/wallpaper-res.apk/res/drawable-nodpi/wallpaper_"*.webp; do
+for f in "$APKTOOL_DIR/system/priv-app/wallpaper-res/wallpaper-res.apk/res"/drawable-nodpi*/wallpaper_*.webp; do
+    [ -f "$f" ] || continue
     COMPRESS_WEBP "$f"
 done
 for f in "$APKTOOL_DIR/system/priv-app/wallpaper-res/wallpaper-res.apk/res/raw/video_"*.mp4; do
+    [ -f "$f" ] || continue
     ENCODE_MP4 "$f"
 done
-LOG "- Downloading latest Samsung Wallpaper app"
-DOWNLOAD_FILE "$(GET_GALAXY_STORE_DOWNLOAD_URL "000008552712")" \
-    "$WORK_DIR/system/system/priv-app/SpriteWallpaper/SpriteWallpaper.apk"
+LOG "- Using source Samsung Wallpaper app"
 APPLY_PATCH "system" "system/priv-app/SpriteWallpaper/SpriteWallpaper.apk" \
-    "$MODPATH/SpriteWallpaper.apk/0001-Force-Paradigm-wallpapers-motion-animator.patch"
+    "$MODPATH/SpriteWallpaper.apk/0001-Force-Miracle-wallpapers-motion-animator.patch"
 APPLY_PATCH "system" "system/priv-app/SpriteWallpaper/SpriteWallpaper.apk" \
     "$MODPATH/SpriteWallpaper.apk/0002-Adjust-motion-animator-for-60fps-video-files.patch"
 APPLY_PATCH "system" "system/priv-app/wallpaper-res/wallpaper-res.apk" \

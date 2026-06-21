@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # Only the below variable(s) need to be changed!
-VERSION_MAJOR=3
+VERSION_MAJOR=4
 VERSION_MINOR=1
 VERSION_PATCH=0
 

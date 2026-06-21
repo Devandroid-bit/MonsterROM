@@ -66,7 +66,6 @@ cat <<'EOF' >> "$SEPOLICY"
 (allow prophide init (process (noatsecure rlimitinh siginh)))
 ; block access
 (allow prophide block_device (blk_file (read open getattr ioctl)))
-(allow prophide emmcblk_device (blk_file (read open getattr ioctl)))
 ; allow calling init_exec by escalating when needed
 (allow init prophide_exec (file (read open execute getattr map)))
 (allow prophide init_exec (file (read open execute getattr map)))
@@ -76,6 +75,18 @@ cat <<'EOF' >> "$SEPOLICY"
 (allow prophide toolbox_exec (file (read open execute getattr map execute_no_trans)))
 (allow prophide prophide_exec (file (entrypoint read open execute getattr map)))
 EOF
+
+if grep -q "^(type emmcblk_device)" "$WORK_DIR/vendor/etc/selinux/vendor_sepolicy.cil"; then
+cat <<'EOF' >> "$SEPOLICY"
+(allow prophide emmcblk_device (blk_file (read open getattr ioctl)))
+EOF
+fi
+if grep -q "^(type vbmeta_block_device)" "$WORK_DIR/vendor/etc/selinux/vendor_sepolicy.cil"; then
+cat <<'EOF' >> "$SEPOLICY"
+(allow prophide vbmeta_block_device (blk_file (read open getattr ioctl)))
+(allow prophide vbmeta_block_device (lnk_file (read open getattr)))
+EOF
+fi
 
 unset VBIMG AVBINFO AVBSIZE PK_OFFSET PK_SIZE SEPOLICY
 unset -f PUB_KEY_ADDR_EXTRACT

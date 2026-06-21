@@ -1,0 +1,4 @@
+id=camera_compat
+name=Legacy camera HAL compatibility
+author=ditternation
+description=Adapts Android 17 Samsung Camera defaults and metadata handling to the Exynos 2100 camera HAL.

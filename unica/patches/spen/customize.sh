@@ -31,7 +31,8 @@ if ! $SOURCE_HAS_SPEN; then
     fi
 else
     if ! $TARGET_HAS_SPEN; then
-        ABORT "Missing patch for condition (SOURCE_HAS_SPEN: [$SOURCE_HAS_SPEN], TARGET_HAS_SPEN: [$TARGET_HAS_SPEN]). Aborting"
+        # Source has S Pen, target doesn't — S Pen files from source are irrelevant; skip.
+        LOG "\033[0;33m! Nothing to do\033[0m"
     fi
 fi
 

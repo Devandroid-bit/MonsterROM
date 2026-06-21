@@ -58,13 +58,13 @@ index a6a0faebd..2052d1a4c 100644
      .catchall {:try_start_1 .. :try_end_1} :catchall_0
 @@ -6825,7 +6834,7 @@
  
-     goto :goto_1
+     goto :goto_0
  
 -    :cond_1
 +    :cond_2
      :try_start_2
      monitor-exit v2
- 
+     :try_end_2
 @@ -12876,17 +12885,26 @@
  .method public final registerTaskStackListener(Landroid/app/ITaskStackListener;)V
      .locals 2

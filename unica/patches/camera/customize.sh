@@ -101,6 +101,8 @@ if ! grep -q "ENABLE_SINGLE_TAKE_LITE.*true" "$WORK_DIR/system/system/cameradata
             ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" \
                 "etc/singletake/SmartCrop/SmartCrop.tflite" 0 0 644 "u:object_r:vendor_configs_file:s0"
         fi
+    elif [ -d "$WORK_DIR/vendor/etc/singletake/SmartCrop" ]; then
+        : # SmartCrop already present in work dir from target firmware; nothing to do
     else
         # TODO handle this condition
         SOURCE_SUPPORT_SMART_CROP=false
@@ -119,10 +121,12 @@ SOURCE_CAMERA_CONFIG_ACTION_CLASSIFIER="$(GET_FLOATING_FEATURE_CONFIG "$FW_DIR/$
 TARGET_CAMERA_CONFIG_ACTION_CLASSIFIER="$(GET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_CAMERA_CONFIG_ACTION_CLASSIFIER")"
 if [ "$SOURCE_CAMERA_CONFIG_ACTION_CLASSIFIER" ]; then
     if [ "$TARGET_CAMERA_CONFIG_ACTION_CLASSIFIER" ]; then
-        if [ -d "$WORK_DIR/vendor/etc/singletake/dynamic_viewing" ]; then
-            DELETE_FROM_WORK_DIR "vendor" "etc/singletake/dynamic_viewing"
+        if [ -d "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/etc/singletake/dynamic_viewing" ]; then
+            if [ -d "$WORK_DIR/vendor/etc/singletake/dynamic_viewing" ]; then
+                DELETE_FROM_WORK_DIR "vendor" "etc/singletake/dynamic_viewing"
+            fi
+            ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" "etc/singletake/dynamic_viewing" 0 2000 755 "u:object_r:vendor_configs_file:s0"
         fi
-        ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" "etc/singletake/dynamic_viewing" 0 2000 755 "u:object_r:vendor_configs_file:s0"
     else
         DELETE_FROM_WORK_DIR "system" "system/lib64/libVideoClassifier.camera.samsung.so"
         DELETE_FROM_WORK_DIR "system" "system/lib64/libtensorflowLite2_11_0_dynamic_camera.so"
@@ -341,10 +345,12 @@ fi
 while IFS= read -r f; do
     HEX_PATCH "$f" "726f2e70726f647563742e6d6f64656c00" "726f2e626f6f742e656d2e6d6f64656c00"
 done < <(grep -r -w -l "ro.product.model" "$WORK_DIR/vendor" | grep "camera")
-HEX_PATCH "$WORK_DIR/system/system/lib/libstagefright.so" \
-    "726f2e70726f647563742e6d6f64656c00" "726f2e626f6f742e656d2e6d6f64656c00"
-HEX_PATCH "$WORK_DIR/system/system/lib64/libstagefright.so" \
-    "726f2e70726f647563742e6d6f64656c00" "726f2e626f6f742e656d2e6d6f64656c00"
+[ -f "$WORK_DIR/system/system/lib/libstagefright.so" ] && \
+    HEX_PATCH "$WORK_DIR/system/system/lib/libstagefright.so" \
+        "726f2e70726f647563742e6d6f64656c00" "726f2e626f6f742e656d2e6d6f64656c00"
+[ -f "$WORK_DIR/system/system/lib64/libstagefright.so" ] && \
+    HEX_PATCH "$WORK_DIR/system/system/lib64/libstagefright.so" \
+        "726f2e70726f647563742e6d6f64656c00" "726f2e626f6f742e656d2e6d6f64656c00"
 
 # Fix object capture
 if [[ "$TARGET_OS_SINGLE_SYSTEM_IMAGE" == "essi" ]]; then

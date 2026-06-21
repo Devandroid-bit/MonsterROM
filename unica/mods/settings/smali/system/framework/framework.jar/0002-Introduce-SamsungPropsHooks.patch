@@ -1,17 +1,3 @@
-From aa9f538e0b18d514d100ffdfc2d3f47575cf69cf Mon Sep 17 00:00:00 2001
-From: Salvo Giangreco <giangrecosalvo9@gmail.com>
-Date: Fri, 24 Oct 2025 11:59:09 +0200
-Subject: [PATCH] Introduce SamsungPropsHooks
-
-UN1CA: this patch is not complete! Please check unica/mods/settings/customize.sh for more info.
----
- .../android/os/SemSystemProperties.smali      |  11 +-
- .../io/mesalabs/unica/SamsungPropsHooks.smali | 559 ++++++++++++++++++
- 2 files changed, 569 insertions(+), 1 deletion(-)
- create mode 100644 smali_classes6/io/mesalabs/unica/SamsungPropsHooks.smali
-
-diff --git a/smali_classes3/android/os/SemSystemProperties.smali b/smali_classes3/android/os/SemSystemProperties.smali
-index d40468a0..626ff234 100644
 --- a/smali_classes3/android/os/SemSystemProperties.smali
 +++ b/smali_classes3/android/os/SemSystemProperties.smali
 @@ -13,8 +13,17 @@
@@ -20,7 +6,7 @@ index d40468a0..626ff234 100644
  .method public static whitelist get(Ljava/lang/String;)Ljava/lang/String;
 -    .locals 0
 +    .locals 1
-+
+ 
 +    invoke-static {p0}, Lio/mesalabs/unica/SamsungPropsHooks;->onSystemPropertiesGet(Ljava/lang/String;)Ljava/lang/String;
 +
 +    move-result-object v0
@@ -28,14 +14,11 @@ index d40468a0..626ff234 100644
 +    if-eqz v0, :cond_0
 +
 +    return-object v0
- 
++
 +    :cond_0
      invoke-static {p0}, Landroid/os/SystemProperties;->get(Ljava/lang/String;)Ljava/lang/String;
  
      move-result-object p0
-diff --git a/smali_classes6/io/mesalabs/unica/SamsungPropsHooks.smali b/smali_classes6/io/mesalabs/unica/SamsungPropsHooks.smali
-new file mode 100644
-index 00000000..a0a6eb6d
 --- /dev/null
 +++ b/smali_classes6/io/mesalabs/unica/SamsungPropsHooks.smali
 @@ -0,0 +1,559 @@
@@ -598,6 +581,3 @@ index 00000000..a0a6eb6d
 +
 +    return-void
 +.end method
--- 
-2.54.0
-

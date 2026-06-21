@@ -17,24 +17,16 @@ SMALI_PATCH "system" "system/framework/framework.jar" \
 
 DECODE_APK "system" "system/priv-app/SecSettings/SecSettings.apk"
 
-# Disable stock OTA references
-if [ ! -f "$WORK_DIR/system/system/priv-app/ChoiDujour/ChoiDujour.apk" ]; then
-    SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-        "smali_classes3/com/samsung/android/settings/softwareupdate/SoftwareUpdateUtils.smali" "return" \
-        'isOTAUpgradeAllowed(Landroid/content/Context;)Z' \
-        'false'
-fi
-
 # Always show One UI minor version
 SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali_classes4/com/samsung/android/settings/deviceinfo/softwareinfo/OneUIVersionPreferenceController.smali" "replace" \
+    "smali_classes3/com/samsung/android/settings/deviceinfo/softwareinfo/OneUIVersionPreferenceController.smali" "replace" \
     'isDeviceWithMicroVersion()Z' \
     'move-result p0' \
     'const/4 p0, 0x1'
 
 # Show real device model number
 SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali_classes4/com/samsung/android/settings/deviceinfo/aboutphone/ModelNameGetter.smali" "replace" \
+    "smali_classes3/com/samsung/android/settings/deviceinfo/aboutphone/ModelNameGetter.smali" "replace" \
     'getModelName()Ljava/lang/String;' \
     'ro.product.model' \
     'ro.boot.em.model'
@@ -70,144 +62,30 @@ while IFS= read -r f; do
 done < <(find "$MODPATH/SecSettings.apk" -type f)
 
 # Add UN1CA Settings SearchIndexDataProvider(s)
-LOG "- Patching \"smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali\" in /system/system/priv-app/SecSettings.apk"
+LOG "- Patching \"smali_classes2/com/android/settings/search/SearchFeatureProviderImpl\$\$ExternalSyntheticLambda0.smali\" in /system/system/priv-app/SecSettings.apk"
 SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    new-instance v0, Lcom/android/settingslib/search/SearchIndexableData;\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    const-class v1, Lio/mesalabs/unica/settings/UnicaSettingsFragment;\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    sget-object v2, Lio/mesalabs/unica/settings/UnicaSettingsFragment;->SEARCH_INDEX_DATA_PROVIDER:Lcom/android/settings/search/BaseSearchIndexProvider;\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    invoke-direct {v0, v1, v2}, Lcom/android/settingslib/search/SearchIndexableData;-><init>(Ljava/lang/Class;Lcom/android/settingslib/search/Indexable$SearchIndexProvider;)V\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    invoke-virtual {p0, v0}, Lcom/android/settingslib/search/SearchIndexableResourcesBase;->addIndex(Lcom/android/settingslib/search/SearchIndexableData;)V\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    new-instance v0, Lcom/android/settingslib/search/SearchIndexableData;\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    const-class v1, Lio/mesalabs/unica/settings/extra/ExtraSettingsFragment;\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    sget-object v2, Lio/mesalabs/unica/settings/extra/ExtraSettingsFragment;->SEARCH_INDEX_DATA_PROVIDER:Lcom/android/settings/search/BaseSearchIndexProvider;\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    invoke-direct {v0, v1, v2}, Lcom/android/settingslib/search/SearchIndexableData;-><init>(Ljava/lang/Class;Lcom/android/settingslib/search/Indexable$SearchIndexProvider;)V\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    invoke-virtual {p0, v0}, Lcom/android/settingslib/search/SearchIndexableResourcesBase;->addIndex(Lcom/android/settingslib/search/SearchIndexableData;)V\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    new-instance v0, Lcom/android/settingslib/search/SearchIndexableData;\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    const-class v1, Lio/mesalabs/unica/settings/spoof/SpoofSettingsFragment;\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    sget-object v2, Lio/mesalabs/unica/settings/spoof/SpoofSettingsFragment;->SEARCH_INDEX_DATA_PROVIDER:Lcom/android/settings/search/BaseSearchIndexProvider;\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    invoke-direct {v0, v1, v2}, Lcom/android/settingslib/search/SearchIndexableData;-><init>(Ljava/lang/Class;Lcom/android/settingslib/search/Indexable$SearchIndexProvider;)V\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    invoke-virtual {p0, v0}, Lcom/android/settingslib/search/SearchIndexableResourcesBase;->addIndex(Lcom/android/settingslib/search/SearchIndexableData;)V\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    new-instance v0, Lcom/android/settingslib/search/SearchIndexableData;\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    const-class v1, Lio/mesalabs/unica/settings/ui/UISettingsFragment;\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    sget-object v2, Lio/mesalabs/unica/settings/ui/UISettingsFragment;->SEARCH_INDEX_DATA_PROVIDER:Lcom/android/settings/search/BaseSearchIndexProvider;\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    invoke-direct {v0, v1, v2}, Lcom/android/settingslib/search/SearchIndexableData;-><init>(Ljava/lang/Class;Lcom/android/settingslib/search/Indexable$SearchIndexProvider;)V\n\n    return-void' \
-    > /dev/null
-SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-    "smali/com/android/settingslib/search/SearchIndexableResourcesBase.smali" "replace" \
-    '<init>()V' \
-    'return-void' \
-    '    invoke-virtual {p0, v0}, Lcom/android/settingslib/search/SearchIndexableResourcesBase;->addIndex(Lcom/android/settingslib/search/SearchIndexableData;)V\n\n    return-void' \
+    "smali_classes2/com/android/settings/search/SearchFeatureProviderImpl\$\$ExternalSyntheticLambda0.smali" "replace" \
+    'invoke()Ljava/lang/Object;' \
+    'return-object p0' \
+    '    new-instance v0, Lcom/android/settingslib/search/SearchIndexableData;\n\n    const-class v1, Lio/mesalabs/unica/settings/UnicaSettingsFragment;\n\n    sget-object v2, Lio/mesalabs/unica/settings/UnicaSettingsFragment;->SEARCH_INDEX_DATA_PROVIDER:Lcom/android/settings/search/BaseSearchIndexProvider;\n\n    invoke-direct {v0, v1, v2}, Lcom/android/settingslib/search/SearchIndexableData;-><init>(Ljava/lang/Class;Lcom/android/settingslib/search/Indexable$SearchIndexProvider;)V\n\n    invoke-virtual {p0, v0}, Lcom/android/settingslib/search/SearchIndexableResourcesBase;->addIndex(Lcom/android/settingslib/search/SearchIndexableData;)V\n\n    new-instance v0, Lcom/android/settingslib/search/SearchIndexableData;\n\n    const-class v1, Lio/mesalabs/unica/settings/extra/ExtraSettingsFragment;\n\n    sget-object v2, Lio/mesalabs/unica/settings/extra/ExtraSettingsFragment;->SEARCH_INDEX_DATA_PROVIDER:Lcom/android/settings/search/BaseSearchIndexProvider;\n\n    invoke-direct {v0, v1, v2}, Lcom/android/settingslib/search/SearchIndexableData;-><init>(Ljava/lang/Class;Lcom/android/settingslib/search/Indexable$SearchIndexProvider;)V\n\n    invoke-virtual {p0, v0}, Lcom/android/settingslib/search/SearchIndexableResourcesBase;->addIndex(Lcom/android/settingslib/search/SearchIndexableData;)V\n\n    new-instance v0, Lcom/android/settingslib/search/SearchIndexableData;\n\n    const-class v1, Lio/mesalabs/unica/settings/spoof/SpoofSettingsFragment;\n\n    sget-object v2, Lio/mesalabs/unica/settings/spoof/SpoofSettingsFragment;->SEARCH_INDEX_DATA_PROVIDER:Lcom/android/settings/search/BaseSearchIndexProvider;\n\n    invoke-direct {v0, v1, v2}, Lcom/android/settingslib/search/SearchIndexableData;-><init>(Ljava/lang/Class;Lcom/android/settingslib/search/Indexable$SearchIndexProvider;)V\n\n    invoke-virtual {p0, v0}, Lcom/android/settingslib/search/SearchIndexableResourcesBase;->addIndex(Lcom/android/settingslib/search/SearchIndexableData;)V\n\n    new-instance v0, Lcom/android/settingslib/search/SearchIndexableData;\n\n    const-class v1, Lio/mesalabs/unica/settings/ui/UISettingsFragment;\n\n    sget-object v2, Lio/mesalabs/unica/settings/ui/UISettingsFragment;->SEARCH_INDEX_DATA_PROVIDER:Lcom/android/settings/search/BaseSearchIndexProvider;\n\n    invoke-direct {v0, v1, v2}, Lcom/android/settingslib/search/SearchIndexableData;-><init>(Ljava/lang/Class;Lcom/android/settingslib/search/Indexable$SearchIndexProvider;)V\n\n    invoke-virtual {p0, v0}, Lcom/android/settingslib/search/SearchIndexableResourcesBase;->addIndex(Lcom/android/settingslib/search/SearchIndexableData;)V\n\n    return-object p0' \
     > /dev/null
 DECODE_APK "system" "system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk"
 LOG "- Patching \"smali_classes2/com/samsung/android/settings/intelligence/search/categorizing/TopLevelKeysCollector.smali\" in /system/system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk"
 SMALI_PATCH "system" "system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" \
     "smali_classes2/com/samsung/android/settings/intelligence/search/categorizing/TopLevelKeysCollector.smali" "replace" \
     '<init>(Landroid/content/Context;)V' \
-    '.locals 36' \
     '.locals 37' \
+    '.locals 38' \
     > /dev/null
 SMALI_PATCH "system" "system/priv-app/SecSettingsIntelligence/SecSettingsIntelligence.apk" \
     "smali_classes2/com/samsung/android/settings/intelligence/search/categorizing/TopLevelKeysCollector.smali" "replace" \
     '<init>(Landroid/content/Context;)V' \
-    'filled-new-array/range {v1 .. v35}, [Ljava/lang/String;' \
-    '    const-string v36, "top_level_unica"\n\n    filled-new-array/range {v1 .. v36}, [Ljava/lang/String;' \
+    'filled-new-array/range {v1 .. v36}, [Ljava/lang/String;' \
+    '    const-string v37, "top_level_unica"\n\n    filled-new-array/range {v1 .. v37}, [Ljava/lang/String;' \
     > /dev/null
 
 # Show Vulkan renderer toggle if required
-if [[ "$(GET_PROP "ro.hwui.use_vulkan")" != "true" ]]; then
+if [[ "$(GET_PROP "vendor" "ro.hwui.use_vulkan")" != "true" ]]; then
     SET_PROP "system" "persist.sys.unica.vulkan" "false"
 fi
 
