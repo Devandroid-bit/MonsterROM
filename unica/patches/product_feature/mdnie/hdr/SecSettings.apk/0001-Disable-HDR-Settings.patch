@@ -31,7 +31,7 @@ index c412f3e..6a7b56f 100644
 -
 -    move-result-object v1
 -
--    const v2, 0x1070090
+-    const v2, 0x1070098
 -
 -    invoke-virtual {v1, v2}, Landroid/content/res/Resources;->getStringArray(I)[Ljava/lang/String;
 -
@@ -41,7 +41,7 @@ index c412f3e..6a7b56f 100644
 -
 -    move-result-object p0
 -
--    const v2, 0x1070076
+-    const v2, 0x107007e
 -
 -    invoke-virtual {p0, v2}, Landroid/content/res/Resources;->getStringArray(I)[Ljava/lang/String;
 -
@@ -117,7 +117,7 @@ index c412f3e..6a7b56f 100644
 -
 -    invoke-virtual {p0, v0, v1}, Lorg/json/JSONObject;->put(Ljava/lang/String;Ljava/lang/Object;)Lorg/json/JSONObject;
 -
--    const-string/jumbo v0, "true_names"
+-    const-string v0, "true_names"
 -
 -    invoke-virtual {p0, v0, v4}, Lorg/json/JSONObject;->put(Ljava/lang/String;Ljava/lang/Object;)Lorg/json/JSONObject;
 -    :try_end_0
@@ -189,7 +189,7 @@ index c412f3e..6a7b56f 100644
 -
 -    move-result-object v1
 -
--    const v2, 0x1070090
+-    const v2, 0x1070098
 -
 -    invoke-virtual {v1, v2}, Landroid/content/res/Resources;->getStringArray(I)[Ljava/lang/String;
 -
@@ -199,7 +199,7 @@ index c412f3e..6a7b56f 100644
 -
 -    move-result-object v2
 -
--    const v3, 0x1070076
+-    const v3, 0x107007e
 -
 -    invoke-virtual {v2, v3}, Landroid/content/res/Resources;->getStringArray(I)[Ljava/lang/String;
 -
@@ -291,7 +291,7 @@ index c412f3e..6a7b56f 100644
 -
 -    invoke-direct {v1, p1}, Lorg/json/JSONObject;-><init>(Ljava/lang/String;)V
 -
--    const-string/jumbo p1, "true_names"
+-    const-string p1, "true_names"
 -
 -    invoke-virtual {v1, p1}, Lorg/json/JSONObject;->getJSONArray(Ljava/lang/String;)Lorg/json/JSONArray;
 -

@@ -230,8 +230,37 @@ _APPEND_SEAPP_CONTEXT()
     fi
 }
 
+_SELECT_CIL_TYPE()
+{
+    local TYPE
+
+    for TYPE in "$@"; do
+        if _TYPE_EXISTS "$TYPE"; then
+            printf "%s\n" "$TYPE"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+ENGMODE_SERVICE_TYPE="$(_SELECT_CIL_TYPE "EngineeringMode_service" "Engmode_service")"
+if [ -z "$ENGMODE_SERVICE_TYPE" ]; then
+    LOGW "SELinux type not found for vendor.samsung.hardware.security.engmode.ISehEngmode/default"
+fi
+ENGMODE_SERVICE_NAME="vendor.samsung.hardware.security.engmode.ISehEngmode/default"
+
 _APPEND_CONTEXT "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts" "vendor.samsung.hardware.security.vaultkeeper.ISehVaultKeeper/default" "VaultKeeper_service"
 _APPEND_CONTEXT "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts" "vendor.samsung.hardware.security.hermes.ISehHermesCommand/default" "Hermes_service"
+if [ -n "$ENGMODE_SERVICE_TYPE" ]; then
+    if grep -q -F "$ENGMODE_SERVICE_NAME" \
+            "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts" \
+            "$WORK_DIR/$(GET_SYSTEM_EXT)/etc/selinux/system_ext_service_contexts" 2>/dev/null; then
+        LOG "- Keeping existing SELinux context: $ENGMODE_SERVICE_NAME"
+    else
+        _APPEND_CONTEXT "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts" "$ENGMODE_SERVICE_NAME" "$ENGMODE_SERVICE_TYPE"
+    fi
+fi
 _APPEND_CONTEXT "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts" "vendor.samsung.hardware.sysinput.ISehSysInputDev/default" "SemInputDeviceManager_service"
 _APPEND_CONTEXT "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts" "vendor.samsung.hardware.radio.bridge.ISehRadioBridge/slot1" "hal_radio_service"
 _APPEND_CONTEXT "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts" "vendor.samsung.hardware.radio.bridge.ISehRadioBridge/slot2" "hal_radio_service"
@@ -240,7 +269,12 @@ _APPEND_CONTEXT "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts" "vendor.s
 _APPEND_CONTEXT "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts" "android.hardware.security.keymint.IRemotelyProvisionedComponent/strongbox" "hal_remotelyprovisionedcomponent_service"
 _APPEND_CONTEXT "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts" "vendor.qti.hardware.display.config.IDisplayConfig/default" "vendor_hal_displayconfig_service"
 _APPEND_CONTEXT "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts" "vendor.qti.hardware.display.aiqe.IDisplayAiqe/default" "vendor_hal_displayconfig_service"
+_APPEND_CONTEXT "$WORK_DIR/vendor/etc/selinux/vendor_hwservice_contexts" "vendor.samsung.hardware.radio.bridge::ISehBridge" "hal_telephony_hwservice"
 _APPEND_CONTEXT "$WORK_DIR/vendor/etc/selinux/vendor_hwservice_contexts" "vendor.display.config::IDisplayConfig" "hal_vendor_configstore_hwservice"
+_APPEND_CONTEXT "$WORK_DIR/$(GET_SYSTEM_EXT)/etc/selinux/system_ext_service_contexts" "vendor.samsung.hardware.security.vaultkeeper.ISehVaultKeeper/default" "VaultKeeper_service"
+_APPEND_CONTEXT "$WORK_DIR/$(GET_SYSTEM_EXT)/etc/selinux/system_ext_service_contexts" "vendor.qti.hardware.display.config.IDisplayConfig/default" "vendor_hal_displayconfig_service"
+_APPEND_CONTEXT "$WORK_DIR/$(GET_SYSTEM_EXT)/etc/selinux/system_ext_service_contexts" "vendor.qti.hardware.display.aiqe.IDisplayAiqe/default" "vendor_hal_displayconfig_service"
+_APPEND_CONTEXT "$WORK_DIR/$(GET_SYSTEM_EXT)/etc/selinux/system_ext_hwservice_contexts" "vendor.display.config::IDisplayConfig" "hal_vendor_configstore_hwservice"
 _APPEND_CONTEXT "$WORK_DIR/$(GET_SYSTEM_EXT)/etc/selinux/system_ext_service_contexts" "vendor.samsung.hardware.kg30.ISehKg30/default" "knoxguard_service"
 _APPEND_CONTEXT "$WORK_DIR/$(GET_SYSTEM_EXT)/etc/selinux/system_ext_service_contexts" "vendor.samsung.hardware.khdm.ISehKhdm/default" "EDM_Policy_service"
 _APPEND_CONTEXT "$WORK_DIR/system/system/etc/selinux/plat_service_contexts" "android.hardware.bluetooth.ranging.IBluetoothChannelSounding/samsung" "hal_bluetooth_service"
@@ -274,6 +308,33 @@ _APPEND_PROP_ALLOW()
     RULE="(allow $DOMAIN $TYPE (file (read getattr map open)))"
     if ! grep -q -F "$RULE" "$FILE"; then
         PATCHED=true
+        printf "%s\n" "$RULE" >> "$FILE"
+    fi
+}
+
+_APPEND_PROP_READ()
+{
+    local FILE="$1"
+    local DOMAIN="$2"
+    local TYPE="$3"
+    local RULE
+
+    [ -f "$FILE" ] || return 0
+
+    if ! _CIL_SYMBOL_EXISTS "$DOMAIN"; then
+        LOGW "SELinux domain not found for property read: $DOMAIN"
+        return 0
+    fi
+
+    if ! _CIL_SYMBOL_EXISTS "$TYPE"; then
+        LOGW "SELinux property type not found for $DOMAIN: $TYPE"
+        return 0
+    fi
+
+    RULE="(allow $DOMAIN $TYPE (file (read getattr map open)))"
+    if ! grep -q -F "$RULE" "$FILE"; then
+        PATCHED=true
+        LOG "- Allowing $DOMAIN to read $TYPE"
         printf "%s\n" "$RULE" >> "$FILE"
     fi
 }
@@ -366,8 +427,44 @@ _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "hermesd" "vendor_securehw_prop"
 _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "hermesd" "vendor_securenvm_prop"
 _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "snap_utility" "cache_status_prop"
 _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "system_app" "logpersistd_logging_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "vendor_init" "default_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "vendor_init" "vendor_rmnet_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "vendor_init" "vendor_df_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "vendor_init" "userdebug_or_eng_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "vendor_init" "shell_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "vendor_init" "net_dns_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "vendor_init" "vold_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "vendor_init" "vendor_wda_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "vendor_init" "vendor_hwc_vsync_prop"
+_APPEND_PROP_READ "$SYSTEM_EXT_SEPOLICY" "vendor_init" "tzdaemon_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "logd" "log_ewlogd_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "scs" "exported_system_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "bootchecker" "system_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "at_distributor" "radio_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "samsungpowersoundplay" "audio_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "rdxd" "debug_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "priv_app" "log_tag_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "priv_app" "sqlite_log_prop"
 _APPEND_PROP_ALLOW "$VENDOR_SEPOLICY" "macloader" "vendor_default_prop_30_0"
+_APPEND_PROP_ALLOW "$VENDOR_SEPOLICY" "macloader" "vendor_default_prop"
 _APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "samsungpowersoundplay" "audio_service"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "platform_app_36" "aidl_codecsolution_service"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "platform_app_36" "cameraworker_service"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "platform_app_36" "sem_ssdid_service"
+[ -z "$ENGMODE_SERVICE_TYPE" ] || _APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "platform_app_36" "$ENGMODE_SERVICE_TYPE"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "scs" "VaultKeeper_service"
+[ -z "$ENGMODE_SERVICE_TYPE" ] || _APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "system_server" "$ENGMODE_SERVICE_TYPE"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "system_server" "vendor_hal_displayconfig_service"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "system_app" "system_suspend_control_service"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "system_app" "system_suspend_control_internal_service"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "system_app" "tracingproxy_service"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "system_app" "apex_service"
+[ -z "$ENGMODE_SERVICE_TYPE" ] || _APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "rdxd" "$ENGMODE_SERVICE_TYPE"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "shared_relro" "edm_proxy_service"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "isolated_app" "knoxzt_service"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "surfaceflinger" "vendor_hal_displayconfig_service"
+_APPEND_HWSERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "surfaceflinger" "hal_vendor_configstore_hwservice"
+_APPEND_HWSERVICE_FIND "$VENDOR_SEPOLICY" "multiclientd" "hal_telephony_hwservice"
 _APPEND_HWSERVICE_FIND "$VENDOR_SEPOLICY" "hal_audio_default" "system_suspend_hwservice_30_0"
 _APPEND_PROCESS_ALLOW "$SYSTEM_EXT_SEPOLICY" "adbd" "self" "setcurrent"
 _APPEND_PROCESS_ALLOW "$SYSTEM_EXT_SEPOLICY" "adbd" "su" "dyntransition"
@@ -384,5 +481,5 @@ if ! $PATCHED; then
     LOG "\033[0;33m! Nothing to do\033[0m"
 fi
 
-unset ENTRIES DUPLICATES SERVICE_DUPLICATES CIL_NAME PATCHED SELINUX_DIRS VENDOR_API_LIST MAPPING_FILE SYSTEM_EXT_SEPOLICY VENDOR_SEPOLICY SYSTEM_EXT_SEAPP SYSTEM_EXT_SEAPP_RULE
-unset -f GET_SYSTEM_EXT _CLEAN_UNDECLARED_MAPPING_ATTRS _TYPE_EXISTS _CIL_SYMBOL_EXISTS _APPEND_CONTEXT _APPEND_SEAPP_CONTEXT _APPEND_PROP_ALLOW _APPEND_CIL_RULE _APPEND_SERVICE_FIND _APPEND_HWSERVICE_FIND _APPEND_PROCESS_ALLOW
+unset ENTRIES DUPLICATES SERVICE_DUPLICATES CIL_NAME PATCHED SELINUX_DIRS VENDOR_API_LIST MAPPING_FILE ENGMODE_SERVICE_TYPE ENGMODE_SERVICE_NAME SYSTEM_EXT_SEPOLICY VENDOR_SEPOLICY SYSTEM_EXT_SEAPP SYSTEM_EXT_SEAPP_RULE
+unset -f GET_SYSTEM_EXT _CLEAN_UNDECLARED_MAPPING_ATTRS _TYPE_EXISTS _CIL_SYMBOL_EXISTS _APPEND_CONTEXT _APPEND_SEAPP_CONTEXT _SELECT_CIL_TYPE _APPEND_PROP_ALLOW _APPEND_PROP_READ _APPEND_CIL_RULE _APPEND_SERVICE_FIND _APPEND_HWSERVICE_FIND _APPEND_PROCESS_ALLOW

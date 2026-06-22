@@ -22,6 +22,25 @@ THREAD_COUNT=$(awk -v max="$(nproc)" '/MemTotal/ {
 
 [ -n "$GITHUB_ACTIONS" ] && THREAD_COUNT=1
 
+APKTOOL_TMP_DIR=""
+
+_EVAL_APKTOOL()
+{
+    local CMD="$1"
+    local SAFE_NAME="${PARTITION}_${FILE//\//_}"
+    local STATUS
+
+    APKTOOL_TMP_DIR="${OUT_DIR:-$SRC_DIR/out}/tmp/apktool/${SAFE_NAME}_$$"
+    rm -rf "$APKTOOL_TMP_DIR"
+    mkdir -p "$APKTOOL_TMP_DIR" || return 1
+
+    EVAL "TMPDIR=\"$APKTOOL_TMP_DIR\" JAVA_TOOL_OPTIONS=\"${JAVA_TOOL_OPTIONS:-} -Djava.io.tmpdir=$APKTOOL_TMP_DIR\" $CMD"
+    STATUS=$?
+
+    rm -rf "$APKTOOL_TMP_DIR"
+    return "$STATUS"
+}
+
 BUILD()
 {
     if [ ! -d "$OUTPUT_PATH" ]; then
@@ -36,7 +55,7 @@ BUILD()
     cp -a "$OUTPUT_PATH/original/META-INF" "$OUTPUT_PATH/build/apk/META-INF"
 
     # Build APK with --shorten-resource-paths (https://developer.android.com/tools/aapt2#optimize_options)
-    EVAL "apktool b -j \"$THREAD_COUNT\" -p \"$FRAMEWORK_DIR\" -srp \"$OUTPUT_PATH\"" || exit 1
+    _EVAL_APKTOOL "apktool b -j \"$THREAD_COUNT\" -p \"$FRAMEWORK_DIR\" -srp \"$OUTPUT_PATH\"" || exit 1
 
     local FILE_NAME
     FILE_NAME="$(basename "$INPUT_FILE")"
@@ -95,7 +114,7 @@ DECODE()
     # - Disabled debug info
     # - Use .locals directive instead of the .registers one
     # - Use a sequential numbering scheme for labels
-    EVAL "apktool d --no-debug-info -j \"$THREAD_COUNT\" -o \"$OUTPUT_PATH\" -p \"$FRAMEWORK_DIR\" -t \"$FRAMEWORK_TAG\" \"$INPUT_FILE\"" || exit 1
+    _EVAL_APKTOOL "apktool d --no-debug-info -j \"$THREAD_COUNT\" -o \"$OUTPUT_PATH\" -p \"$FRAMEWORK_DIR\" -t \"$FRAMEWORK_TAG\" \"$INPUT_FILE\"" || exit 1
 }
 
 PREPARE_SCRIPT()
@@ -175,7 +194,7 @@ if [ ! "$FRAMEWORK_TAG" ]; then
     exit 1
 elif [ ! -f "$FRAMEWORK_DIR/1-$FRAMEWORK_TAG.apk" ]; then
     LOGW "framework-res.apk for \"$FRAMEWORK_TAG\" not found, installing"
-    EVAL "apktool if -p \"$FRAMEWORK_DIR\" -t \"$FRAMEWORK_TAG\" \"$WORK_DIR/system/system/framework/framework-res.apk\"" || exit 1
+    _EVAL_APKTOOL "apktool if -p \"$FRAMEWORK_DIR\" -t \"$FRAMEWORK_TAG\" \"$WORK_DIR/system/system/framework/framework-res.apk\"" || exit 1
 fi
 
 case "$ACTION" in

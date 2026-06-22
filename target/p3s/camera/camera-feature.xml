@@ -148,7 +148,7 @@
     <local name="SUPPORT_LIVE_FOCUS_LENS_TYPE_CHANGE" value="true"/>
     <local name="SUPPORT_DUAL_BOKEH_EFFECT" value="true"/>      
     <local name="SUPPORT_SINGLE_BOKEH_EFFECT" value="true"/>
-    <local name="SUPPORT_LIVE_FOCUS_VIDEO_BEAUTY" value="true"/>
+    <local name="SUPPORT_LIVE_FOCUS_VIDEO_BEAUTY" value="false"/>
     <local name="SUPPORT_LIVE_FOCUS_BACK_CAMERA_ANGLE_CHANGE_BY_ZOOM" value="true"/>
     <local name="SUPPORT_VIDEO_BOKEH_LENS_TYPE_CHANGE" value="true"/>
     <local name="SUPPORT_BOKEH_NIGHT_IN_DIGITAL_2X_ZOOM" value="true"/>
@@ -160,7 +160,7 @@
     <local name="SUPPORT_FOOD_SEAMLESS_ZOOM" value="true"/>
 
     <!-- Live Beauty features -->
-    <local name="SUPPORT_BACK_VIDEO_BEAUTY" value="true"/>
+    <local name="SUPPORT_BACK_VIDEO_BEAUTY" value="false"/>
 
     <!-- HEIF format -->
     <local name="SUPPORT_HEIF_FORMAT" value="true"/>

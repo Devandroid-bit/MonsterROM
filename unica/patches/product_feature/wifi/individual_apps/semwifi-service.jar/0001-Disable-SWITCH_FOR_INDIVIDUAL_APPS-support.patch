@@ -2,50 +2,36 @@ From df120fa148139a34805151986535abcb74cac318 Mon Sep 17 00:00:00 2001
 From: Salvo Giangreco <giangrecosalvo9@gmail.com>
 Date: Sat, 1 Nov 2025 21:35:54 +0100
 Subject: [PATCH] Disable SWITCH_FOR_INDIVIDUAL_APPS support
+
 ---
+ .../wifi/SemWifiConnectivityMonitor.smali      | 18 ++++++------------
+ 1 file changed, 6 insertions(+), 12 deletions(-)
+
 diff --git a/smali/com/samsung/android/server/wifi/SemWifiConnectivityMonitor.smali b/smali/com/samsung/android/server/wifi/SemWifiConnectivityMonitor.smali
 index 0ac81a9..34b1543 100644
 --- a/smali/com/samsung/android/server/wifi/SemWifiConnectivityMonitor.smali
 +++ b/smali/com/samsung/android/server/wifi/SemWifiConnectivityMonitor.smali
-@@ -9832,3 +9832,3 @@
-
-     const-string v0, "WifiConnectivityMonitor"
-
+@@ -9874 +9874 @@
 -    if-eqz p0, :cond_1
 +    if-eqz p0, :cond_0
-
-     const-string v1, "MTK"
-
-@@ -9840,3 +9840,3 @@
-
-     move-result p0
-
+@@ -9882 +9882 @@
 -    if-eqz p0, :cond_1
 +    if-eqz p0, :cond_0
-
-     sget-boolean p0, Lcom/samsung/android/server/wifi/SemWifiConnectivityMonitor;->DBG:Z
-
-@@ -9851,14 +9851,8 @@
-     invoke-static {v0, p0}, Landroid/util/Log;->e(Ljava/lang/String;Ljava/lang/String;)I
-
-     :cond_0
+@@ -9893,9 +9893,2 @@
 -    const/4 p0, 0x0
 -
 -    goto :goto_0
-+    const-string p0, "isIndividualAppSupported : "
-
+-
 -    :cond_1
 -    const/4 p0, 0x1
 -
 -    :goto_0
 -    const-string v1, "isIndividualAppSupported : "
++    const-string p0, "isIndividualAppSupported : "
 +    const/4 v1, 0x0
-
--    invoke-static {v1, v0, p0}, Lcom/samsung/android/server/wifi/SemEasySetupWifiManager$$ExternalSyntheticOutline0;->m(Ljava/lang/String;Ljava/lang/String;Z)V
-+    invoke-static {p0, v0, v1}, Lcom/samsung/android/server/wifi/SemEasySetupWifiManager$$ExternalSyntheticOutline0;->m(Ljava/lang/String;Ljava/lang/String;Z)V
-
+@@ -9903 +9896 @@
+-    invoke-static {v1, v0, p0}, Lcom/samsung/android/server/wifi/ByteUtil$$ExternalSyntheticOutline0;->m(Ljava/lang/String;Ljava/lang/String;Z)V
++    invoke-static {p0, v0, v1}, Lcom/samsung/android/server/wifi/ByteUtil$$ExternalSyntheticOutline0;->m(Ljava/lang/String;Ljava/lang/String;Z)V
+@@ -9905 +9898 @@
 -    return p0
 +    return v1
- .end method
-
- .method public final isInvalidState()Z

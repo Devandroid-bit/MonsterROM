@@ -64,6 +64,283 @@ _DISABLE_PERFETTO_TRACED()
     SET_PROP_IF_DIFF "system" "persist.traced.enable" "0"
 }
 
+_FIX_STRONGBOX_KEYMASTER_RC()
+{
+    local RC="$WORK_DIR/vendor/etc/init/android.hardware.keymaster@4.0_strongbox-service.rc"
+
+    [ -f "$RC" ] || return 0
+
+    if ! grep -q "^    interface android\.hardware\.keymaster@4\.0::IKeymasterDevice strongbox$" "$RC"; then
+        sed -i \
+            "/^service vendor\.keymaster-4-0_strongbox /a\\    interface android.hardware.keymaster@4.0::IKeymasterDevice strongbox" \
+            "$RC"
+    fi
+}
+
+_DISABLE_SURFACEFLINGER_SHADER_CACHE()
+{
+    local INIT_RC="$WORK_DIR/system/system/etc/init/hw/init.rc"
+    local PROP
+
+    [ -f "$INIT_RC" ] || return 0
+
+    if grep -q "^[[:space:]]*setprop service\.sf\.cache_dir_available 1$" "$INIT_RC"; then
+        LOG "- Disabling SurfaceFlinger shader cache priming for legacy gralloc"
+        sed -i \
+            's/^\([[:space:]]*\)setprop service\.sf\.cache_dir_available 1$/\1# setprop service.sf.cache_dir_available 1/g' \
+            "$INIT_RC"
+    fi
+
+    LOG "- Disabling SurfaceFlinger prime shader cache"
+    SET_PROP "product" "service.sf.cache_dir_available" "0"
+    SET_PROP "product" "service.sf.prime_shader_cache" "0"
+
+    for PROP in \
+        debug.sf.prime_shader_cache.clipped_dimmed_image_layers \
+        debug.sf.prime_shader_cache.clipped_layers \
+        debug.sf.prime_shader_cache.edge_extension_shader \
+        debug.sf.prime_shader_cache.hole_punch \
+        debug.sf.prime_shader_cache.image_dimmed_layers \
+        debug.sf.prime_shader_cache.image_layers \
+        debug.sf.prime_shader_cache.pip_image_layers \
+        debug.sf.prime_shader_cache.shadow_layers \
+        debug.sf.prime_shader_cache.solid_dimmed_layers \
+        debug.sf.prime_shader_cache.solid_layers \
+        debug.sf.prime_shader_cache.transparent_image_dimmed_layers; do
+        SET_PROP "product" "$PROP" "0"
+    done
+}
+
+_DISABLE_UNSUPPORTED_MAINLINE_FEATURES()
+{
+    LOG "- Disabling UFFD GC and RKP paths unsupported by Exynos2100 vendor"
+    SET_PROP "product" "ro.dalvik.vm.enable_uffd_gc" "false"
+    SET_PROP "product" "persist.device_config.runtime_native_boot.enable_uffd_gc" "false"
+    SET_PROP "product" "remote_provisioning.enable_rkpd" "false"
+    SET_PROP "product" "remote_provisioning.tee.rkp_only" "0"
+    DELETE_FROM_WORK_DIR "system" "system/apex/com.google.android.rkpd_compressed.apex"
+    _SED_DELETE_IF_EXISTS "$WORK_DIR/system/system/etc/irremovable_list.txt" "/com\.\(android\|google\.android\)\.rkpd/d"
+    _SED_DELETE_IF_EXISTS "$WORK_DIR/system/system/etc/permissions/platform.xml" "/com\.android\.rkpdapp/d"
+}
+
+_DISABLE_UNSUPPORTED_BT_OFFLOAD()
+{
+    LOG "- Disabling Bluetooth audio offload unsupported by Exynos2100 vendor"
+    SET_PROP "product" "persist.bluetooth.a2dp_offload.disabled" "true"
+    SET_PROP "product" "persist.bluetooth.leaudio_offload.disabled" "true"
+    SET_PROP "product" "persist.vendor.bt.a2dp_offload.disabled" "true"
+    SET_PROP "product" "persist.vendor.bluetooth.a2dp_offload.disabled" "true"
+    SET_PROP "product" "ro.bluetooth.leaudio_offload.supported" "false"
+    SET_PROP "product" "persist.bluetooth.samsung.a2dp_offload.cap" --delete
+}
+
+_PATCH_CONST_BEFORE_BOOL_IPUT()
+{
+    local FILE="$1"
+    local FIELD="$2"
+    local COUNT
+
+    awk -v FIELD="$FIELD" '
+        { line[NR] = $0 }
+        END {
+            for (i = 1; i <= NR; i++) {
+                if (index(line[i], FIELD) && line[i] ~ /iput-boolean/) {
+                    for (j = i - 1; j >= 1 && j >= i - 6; j--) {
+                        if (line[j] ~ /^[[:space:]]*const\/4 [vp][0-9]+, 0x1$/) {
+                            sub(/0x1$/, "0x0", line[j])
+                            changed++
+                            break
+                        }
+                    }
+                }
+            }
+            for (i = 1; i <= NR; i++) print line[i]
+            if (!changed) exit 2
+            print changed > "/dev/stderr"
+        }
+    ' "$FILE" > "$FILE.tmp" 2> "$FILE.count" && mv "$FILE.tmp" "$FILE" || {
+        rm -f "$FILE.tmp" "$FILE.count"
+        ABORT "Failed to patch boolean assignment for $FIELD in ${FILE//$SRC_DIR\//}"
+    }
+
+    COUNT="$(cat "$FILE.count")"
+    rm -f "$FILE.count"
+    LOG "- Patched $COUNT boolean assignment(s) for $FIELD"
+}
+
+_PATCH_BOOL_METHOD_RETURN()
+{
+    local FILE="$1"
+    local METHOD="$2"
+    local VALUE="$3"
+    local HEX="0x0"
+
+    [ "$VALUE" = "true" ] && HEX="0x1"
+
+    awk -v METHOD="$METHOD" -v HEX="$HEX" '
+        BEGIN { inside = 0; changed = 0 }
+        /^\.method/ && index($0, METHOD) {
+            print
+            print "    .locals 1"
+            print ""
+            print "    const/4 v0, " HEX
+            print ""
+            print "    return v0"
+            inside = 1
+            changed = 1
+            next
+        }
+        inside && /^\.end method/ {
+            print
+            inside = 0
+            next
+        }
+        inside { next }
+        { print }
+        END { if (!changed) exit 2 }
+    ' "$FILE" > "$FILE.tmp" && mv "$FILE.tmp" "$FILE" || {
+        rm -f "$FILE.tmp"
+        ABORT "Failed to patch method $METHOD in ${FILE//$SRC_DIR\//}"
+    }
+
+    LOG "- Forced $METHOD to return $VALUE"
+}
+
+_PATCH_BLUETOOTH_APEX_OFFLOAD()
+{
+    local APEX="$WORK_DIR/system/system/apex/com.android.bt.apex"
+    local BT_TMP="$TMP_DIR/com_android_bt_apex"
+    local APKTOOL_TMP="$BT_TMP/apktool_tmp"
+    local APEX_SRC="$BT_TMP/apex"
+    local PAYLOAD="$BT_TMP/apex_payload.img"
+    local BT_APK="$BT_TMP/Bluetooth.apk"
+    local BT_APK_DECODED="$BT_TMP/Bluetooth.apk.decoded"
+    local BT_APK_BUILT="$BT_APK_DECODED/dist/Bluetooth.apk"
+    local BT_APK_UNSIGNED="$BT_TMP/Bluetooth-unsigned.apk"
+    local BT_APK_PATCHED="$BT_TMP/Bluetooth-patched.apk"
+    local FW_JAR="$BT_TMP/framework-bluetooth.jar"
+    local FW_JAR_DECODED="$BT_TMP/framework-bluetooth.jar.decoded"
+    local FW_JAR_PATCHED="$BT_TMP/framework-bluetooth-patched.jar"
+    local CERT_PREFIX="aosp"
+    local PARTITION_SIZE
+    local MAX_IMAGE_SIZE
+    local BLOCK_SIZE
+    local BLOCK_COUNT
+    local DEFLATE_LIST="$BT_TMP/apex_deflate.list"
+
+    [ -f "$APEX" ] || return 0
+
+    LOG_STEP_IN "- Patching Bluetooth framework inside com.android.bt.apex"
+
+    if $ROM_IS_OFFICIAL && [ -f "$SRC_DIR/security/unica_platform.x509.pem" ]; then
+        CERT_PREFIX="unica"
+    fi
+
+    rm -rf "$BT_TMP"
+    mkdir -p "$APEX_SRC" "$APKTOOL_TMP"
+
+    unzip -q "$APEX" -d "$APEX_SRC"
+    cp -f "$APEX_SRC/apex_payload.img" "$PAYLOAD"
+
+    e2cp "$PAYLOAD:/app/Bluetooth@CP2A.260605.016/Bluetooth.apk" "$BT_APK"
+    e2cp "$PAYLOAD:/javalib/framework-bluetooth.jar" "$FW_JAR"
+
+    TMPDIR="$APKTOOL_TMP" JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Djava.io.tmpdir=$APKTOOL_TMP" \
+        "$TOOLS_DIR/bin/apktool" d --no-debug-info -r -j "$(nproc)" -f -o "$BT_APK_DECODED" "$BT_APK" >/dev/null
+
+    _PATCH_CONST_BEFORE_BOOL_IPUT \
+        "$BT_APK_DECODED/smali/com/android/bluetooth/a2dp/A2dpService.smali" \
+        "Lcom/android/bluetooth/a2dp/A2dpService;->mA2dpOffloadEnabled:Z"
+    _PATCH_CONST_BEFORE_BOOL_IPUT \
+        "$BT_APK_DECODED/smali/com/android/bluetooth/btservice/AdapterProperties.smali" \
+        "Lcom/android/bluetooth/btservice/AdapterProperties;->mA2dpOffloadEnabled:Z"
+    _PATCH_BOOL_METHOD_RETURN \
+        "$BT_APK_DECODED/smali/com/android/bluetooth/btservice/AdapterProperties.smali" \
+        "isA2dpOffloadEnabled()Z" "false"
+
+    TMPDIR="$APKTOOL_TMP" JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Djava.io.tmpdir=$APKTOOL_TMP" \
+        "$TOOLS_DIR/bin/apktool" b -j "$(nproc)" -srp "$BT_APK_DECODED" >/dev/null
+
+    cp -f "$BT_APK" "$BT_APK_UNSIGNED"
+    unzip -p "$BT_APK_BUILT" classes.dex > "$BT_TMP/classes.dex"
+    touch -t 200901010000 "$BT_TMP/classes.dex"
+    (
+        cd "$BT_TMP"
+        zip -qd "$BT_APK_UNSIGNED" "META-INF/*" classes.dex >/dev/null
+        zip -q -0 -X "$BT_APK_UNSIGNED" classes.dex
+    )
+    "$TOOLS_DIR/bin/signapk" \
+        "$SRC_DIR/security/${CERT_PREFIX}_platform.x509.pem" \
+        "$SRC_DIR/security/${CERT_PREFIX}_platform.pk8" \
+        "$BT_APK_UNSIGNED" "$BT_APK_PATCHED"
+
+    TMPDIR="$APKTOOL_TMP" JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Djava.io.tmpdir=$APKTOOL_TMP" \
+        "$TOOLS_DIR/bin/apktool" d --no-debug-info -j "$(nproc)" -f -o "$FW_JAR_DECODED" "$FW_JAR" >/dev/null
+    _PATCH_BOOL_METHOD_RETURN \
+        "$FW_JAR_DECODED/smali/com/android/bluetooth/jarjar/com/android/bluetooth/flags/Flags.smali" \
+        "a2dpSinkOffload()Z" "false"
+    TMPDIR="$APKTOOL_TMP" JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Djava.io.tmpdir=$APKTOOL_TMP" \
+        "$TOOLS_DIR/bin/apktool" b -j "$(nproc)" -srp "$FW_JAR_DECODED" >/dev/null
+    "$TOOLS_DIR/bin/zipalign" -p 4 \
+        "$FW_JAR_DECODED/dist/framework-bluetooth.jar" "$FW_JAR_PATCHED"
+
+    e2rm "$PAYLOAD:/app/Bluetooth@CP2A.260605.016/Bluetooth.apk"
+    e2cp "$BT_APK_PATCHED" "$PAYLOAD:/app/Bluetooth@CP2A.260605.016/Bluetooth.apk"
+    e2rm "$PAYLOAD:/javalib/framework-bluetooth.jar"
+    e2cp "$FW_JAR_PATCHED" "$PAYLOAD:/javalib/framework-bluetooth.jar"
+
+    "$TOOLS_DIR/bin/avbtool" erase_footer --image "$PAYLOAD"
+    e2fsck -fy "$PAYLOAD" >/dev/null
+    PARTITION_SIZE="$(stat -c '%s' "$APEX_SRC/apex_payload.img")"
+    MAX_IMAGE_SIZE="$("$TOOLS_DIR/bin/avbtool" add_hashtree_footer \
+        --partition_size "$PARTITION_SIZE" \
+        --do_not_generate_fec \
+        --algorithm SHA256_RSA4096 \
+        --key "$SRC_DIR/security/avb/testkey_rsa4096.pem" \
+        --calc_max_image_size)"
+    BLOCK_SIZE="$(dumpe2fs -h "$PAYLOAD" 2>/dev/null | awk '/Block size:/ { print $3; exit }')"
+    BLOCK_COUNT="$((MAX_IMAGE_SIZE / BLOCK_SIZE))"
+    resize2fs "$PAYLOAD" "$BLOCK_COUNT" >/dev/null
+    "$TOOLS_DIR/bin/avbtool" add_hashtree_footer \
+        --image "$PAYLOAD" \
+        --partition_size "$PARTITION_SIZE" \
+        --partition_name "" \
+        --hash_algorithm sha256 \
+        --do_not_generate_fec \
+        --algorithm SHA256_RSA4096 \
+        --key "$SRC_DIR/security/avb/testkey_rsa4096.pem" \
+        --prop apex.key:com.android.bt
+    "$TOOLS_DIR/bin/avbtool" extract_public_key \
+        --key "$SRC_DIR/security/avb/testkey_rsa4096.pem" \
+        --output "$APEX_SRC/apex_pubkey"
+
+    cp -f "$PAYLOAD" "$APEX_SRC/apex_payload.img"
+    rm -rf "$APEX_SRC/META-INF"
+    (
+        cd "$APEX_SRC"
+        find . -exec touch -h -t 200901010000 {} +
+        zip -q -0 -X "$BT_TMP/com.android.bt-unsigned.apex" \
+            apex_payload.img apex_pubkey assets/NOTICE.html.gz resources.arsc
+        find . -type f \
+            ! -path "./META-INF/*" \
+            ! -name "apex_payload.img" \
+            ! -name "apex_pubkey" \
+            ! -name "NOTICE.html.gz" \
+            ! -name "resources.arsc" \
+            -printf "%P\n" | sort > "$DEFLATE_LIST"
+        zip -q -9 -X "$BT_TMP/com.android.bt-unsigned.apex" -@ < "$DEFLATE_LIST"
+    )
+    "$TOOLS_DIR/bin/signapk" \
+        "$SRC_DIR/security/${CERT_PREFIX}_platform.x509.pem" \
+        "$SRC_DIR/security/${CERT_PREFIX}_platform.pk8" \
+        "$BT_TMP/com.android.bt-unsigned.apex" "$BT_TMP/com.android.bt.apex"
+    unzip -t "$BT_TMP/com.android.bt.apex" >/dev/null
+    mv -f "$BT_TMP/com.android.bt.apex" "$APEX"
+    rm -rf "$BT_TMP"
+
+    LOG_STEP_OUT
+}
+
 # The legacy Exynos (Chiclet) kernel cannot load the Android 17 mainline BPF
 # programs, so netbpfload never sets "bpf.progs_loaded" to 1. Left as shipped,
 # the "on load-bpf-programs" action hangs forever on its wait_for_prop, and the
@@ -107,6 +384,11 @@ _FOR_EACH_EXYNOS_INIT "/setprop persist\.data\.df\.agg\.dl_pkt /d"
 _FOR_EACH_EXYNOS_INIT "/setprop persist\.data\.df\.agg\.dl_size /d"
 _FOR_EACH_EXYNOS_INIT "/setprop ro\.crypto\.fuse_sdcard /d"
 _DISABLE_PERFETTO_TRACED
+_FIX_STRONGBOX_KEYMASTER_RC
+_DISABLE_SURFACEFLINGER_SHADER_CACHE
+_DISABLE_UNSUPPORTED_MAINLINE_FEATURES
+_DISABLE_UNSUPPORTED_BT_OFFLOAD
+_PATCH_BLUETOOTH_APEX_OFFLOAD
 LOG_STEP_OUT
 
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/etc/selinux/mapping/29.0.cil" 0 0 644 "u:object_r:system_file:s0"
@@ -114,8 +396,8 @@ ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/etc/selinux/mapping/29.0.com
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/etc/selinux/mapping/30.0.cil" 0 0 644 "u:object_r:system_file:s0"
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/etc/selinux/mapping/30.0.compat.cil" 0 0 644 "u:object_r:system_file:s0"
 
-DELETE_FROM_WORK_DIR "vendor" "ueventd.rc"
-ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "etc/ueventd.rc" 0 0 644 "u:object_r:system_file:s0"
+ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "etc/ueventd.rc" 0 0 644 "u:object_r:vendor_configs_file:s0"
+ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "ueventd.rc" 0 0 644 "u:object_r:vendor_configs_file:s0"
 
-unset -f GET_SYSTEM_EXT _SED_DELETE_IF_EXISTS _FOR_EACH_EXYNOS_INIT _DISABLE_PERFETTO_TRACED
+unset -f GET_SYSTEM_EXT _SED_DELETE_IF_EXISTS _FOR_EACH_EXYNOS_INIT _DISABLE_PERFETTO_TRACED _FIX_STRONGBOX_KEYMASTER_RC _DISABLE_SURFACEFLINGER_SHADER_CACHE _DISABLE_UNSUPPORTED_MAINLINE_FEATURES _DISABLE_UNSUPPORTED_BT_OFFLOAD _PATCH_CONST_BEFORE_BOOL_IPUT _PATCH_BOOL_METHOD_RETURN _PATCH_BLUETOOTH_APEX_OFFLOAD
 LOG_STEP_OUT

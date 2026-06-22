@@ -4,15 +4,15 @@ Date: Sat, 30 Aug 2025 15:36:27 +0200
 Subject: [PATCH] Disable ACH ringtone support
 
 ---
- smali_classes6/com/samsung/android/audio/Rune.smali       | 8 +++++++-
+ smali_classes6/com/samsung/android/audio/Rune.smali       | 2 +-
  smali_classes6/com/samsung/android/vibrator/VibRune.smali | 2 +-
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/smali_classes6/com/samsung/android/audio/Rune.smali b/smali_classes6/com/samsung/android/audio/Rune.smali
 index da0fff18..67f0c356 100644
 --- a/smali_classes6/com/samsung/android/audio/Rune.smali
 +++ b/smali_classes6/com/samsung/android/audio/Rune.smali
-@@ -444,15 +444,16 @@
+@@ -444,17 +444,17 @@
  
      sput-boolean v2, Lcom/samsung/android/audio/Rune;->SEC_AUDIO_SUPPORT_SOUND_THEME:Z
  

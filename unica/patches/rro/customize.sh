@@ -12,6 +12,13 @@ _LOG() { if $DEBUG; then LOGW "$1"; else ABORT "$1"; fi }
 while IFS= read -r f; do
     f="$(basename "$f")"
 
+    LOG "- Removing generated product overlay $f"
+    DELETE_FROM_WORK_DIR "product" "overlay/$f"
+done < <(find "$WORK_DIR/product/overlay" -maxdepth 1 -type f \( -name "*__phone__auto_generated*_rro.apk" -o -name "MediaProviderConfigOverlay.apk" \))
+
+while IFS= read -r f; do
+    f="$(basename "$f")"
+
     DECODE_APK "product" "overlay/$f"
     LOG_STEP_IN "- Renaming $f to ${f//$SOURCE_PRODUCT_NAME/$TARGET_PRODUCT_NAME}"
     DELETE_FROM_WORK_DIR "product" "overlay/$f"

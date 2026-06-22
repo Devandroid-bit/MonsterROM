@@ -15,7 +15,7 @@
 
 .field public mLoadingViewController:Lcom/android/settings/widget/LoadingViewController;
 
-.field public mSwitchBar:Lcom/android/settings/widget/SettingsMainSwitchBar;
+.field public mSwitchBar:Lcom/android/settings/widget/SettingsMainSwitchPreference;
 
 .field public mUserManager:Landroid/os/UserManager;
 
@@ -43,6 +43,20 @@
     const/16 p0, 0x2e8
 
     return p0
+.end method
+
+.method public getPreferenceScreenResId()I
+    .locals 2
+
+    const-string v0, "xml"
+
+    const-string v1, "unica_hma_settings"
+
+    invoke-static {v0, v1}, Lio/mesalabs/unica/utils/Utils;->getResourceId(Ljava/lang/String;Ljava/lang/String;)I
+
+    move-result v0
+
+    return v0
 .end method
 
 .method public final onAttach(Landroid/content/Context;)V
@@ -249,15 +263,15 @@
 
     iput-object v1, p0, Lio/mesalabs/unica/settings/hma/HideMyApplistFragment;->mLoadingViewController:Lcom/android/settings/widget/LoadingViewController;
 
-    invoke-virtual {p0}, Landroidx/fragment/app/Fragment;->getActivity()Landroidx/fragment/app/FragmentActivity;
+    const-string p1, "unica_hma_switch"
+
+    invoke-virtual {p0, p1}, Lcom/android/settings/core/InstrumentedPreferenceFragment;->findPreference(Ljava/lang/CharSequence;)Landroidx/preference/Preference;
 
     move-result-object p1
 
-    check-cast p1, Lcom/android/settings/SettingsActivity;
+    check-cast p1, Lcom/android/settings/widget/SettingsMainSwitchPreference;
 
-    iget-object p1, p1, Lcom/android/settings/SettingsActivity;->mMainSwitch:Lcom/android/settings/widget/SettingsMainSwitchBar;
-
-    iput-object p1, p0, Lio/mesalabs/unica/settings/hma/HideMyApplistFragment;->mSwitchBar:Lcom/android/settings/widget/SettingsMainSwitchBar;
+    iput-object p1, p0, Lio/mesalabs/unica/settings/hma/HideMyApplistFragment;->mSwitchBar:Lcom/android/settings/widget/SettingsMainSwitchPreference;
 
     iget-object p2, p0, Lio/mesalabs/unica/settings/hma/HideMyApplistFragment;->mContext:Landroid/content/Context;
 
@@ -281,15 +295,15 @@
     const/4 v1, 0x0
 
     :goto_0
-    invoke-virtual {p1, v1}, Lcom/android/settings/widget/SettingsMainSwitchBar;->setChecked(Z)V
+    invoke-virtual {p1, v1}, Lcom/android/settings/widget/SettingsMainSwitchPreference;->setChecked(Z)V
 
-    iget-object p1, p0, Lio/mesalabs/unica/settings/hma/HideMyApplistFragment;->mSwitchBar:Lcom/android/settings/widget/SettingsMainSwitchBar;
+    iget-object p1, p0, Lio/mesalabs/unica/settings/hma/HideMyApplistFragment;->mSwitchBar:Lcom/android/settings/widget/SettingsMainSwitchPreference;
 
-    invoke-virtual {p1, p0}, Lcom/samsung/android/settings/widget/SecMainSwitchBar;->addOnSwitchChangeListener(Landroid/widget/CompoundButton$OnCheckedChangeListener;)V
+    invoke-virtual {p1, p0}, Lcom/android/settings/widget/SettingsMainSwitchPreference;->addOnSwitchChangeListener(Landroid/widget/CompoundButton$OnCheckedChangeListener;)V
 
-    iget-object p0, p0, Lio/mesalabs/unica/settings/hma/HideMyApplistFragment;->mSwitchBar:Lcom/android/settings/widget/SettingsMainSwitchBar;
+    iget-object p0, p0, Lio/mesalabs/unica/settings/hma/HideMyApplistFragment;->mSwitchBar:Lcom/android/settings/widget/SettingsMainSwitchPreference;
 
-    invoke-virtual {p0}, Landroidx/appcompat/widget/SeslSwitchBar;->show()V
+    invoke-virtual {p0}, Lcom/android/settings/widget/SettingsMainSwitchPreference;->show()V
 
     return-object p3
 .end method
@@ -299,11 +313,11 @@
 
     invoke-super {p0}, Landroidx/preference/PreferenceFragmentCompat;->onDestroyView()V
 
-    iget-object p0, p0, Lio/mesalabs/unica/settings/hma/HideMyApplistFragment;->mSwitchBar:Lcom/android/settings/widget/SettingsMainSwitchBar;
+    iget-object p0, p0, Lio/mesalabs/unica/settings/hma/HideMyApplistFragment;->mSwitchBar:Lcom/android/settings/widget/SettingsMainSwitchPreference;
 
     if-eqz p0, :cond_0
 
-    invoke-virtual {p0}, Landroidx/appcompat/widget/SeslSwitchBar;->hide()V
+    invoke-virtual {p0}, Lcom/android/settings/widget/SettingsMainSwitchPreference;->hide()V
 
     :cond_0
     return-void

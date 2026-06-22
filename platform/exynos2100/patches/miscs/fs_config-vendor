@@ -1,3 +1,4 @@
  0 2000 755 capabilities=0x0
+vendor/ueventd.rc 0 0 644 capabilities=0x0
 vendor/etc 0 2000 755 capabilities=0x0
 vendor/etc/ueventd.rc 0 0 644 capabilities=0x0
