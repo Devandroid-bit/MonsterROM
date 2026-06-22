@@ -1,6 +1,0 @@
-id=monsterrom-livefix-t2s
-name=MonsterROM Live Fixes for t2s
-version=2026.06.22
-versionCode=20260622
-author=Codex, Jonathan Waeremoes
-description=Live KernelSU Next payload for t2s: NFC, VINTF, camera, UFFD/RKP/SF guards, and Bluetooth APEX/framework offload fixes.

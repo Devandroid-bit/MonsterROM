@@ -1,7 +1,0 @@
-id=meta-erofs-binder
-name=EROFS Bind Mount Metamodule
-version=1.0.0
-versionCode=1
-author=Codex, Jonathan Waeremoes
-description=KernelSU Next metamodule that bind-mounts enabled module payload files onto read-only EROFS partitions.
-metamodule=1
