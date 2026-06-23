@@ -158,7 +158,7 @@
 
     const-string p0, "persist.sys.unica.vulkan"
 
-    const/4 v0, 0x1
+    const/4 v0, 0x0
 
     invoke-static {p0, v0}, Landroid/os/SemSystemProperties;->getBoolean(Ljava/lang/String;Z)Z
 

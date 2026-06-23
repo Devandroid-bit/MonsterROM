@@ -1,2 +1,2 @@
-# Enable boot sound by default
-persist.sys.unica.bootsound=true
+# Keep boot sound available in UN1CA Settings, but default it off on ports.
+persist.sys.unica.bootsound=false

@@ -32,8 +32,11 @@ GET_SYSTEM_EXT()
 
 _SED_DELETE_IF_EXISTS()
 {
-    [ -f "$1" ] || return 0
-    sed -i "$2" "$1"
+    local FILE="$1"
+    shift
+
+    [ -f "$FILE" ] || return 0
+    sed -i "$@" "$FILE"
 }
 
 _FOR_EACH_EXYNOS_INIT()
@@ -75,6 +78,12 @@ _FIX_STRONGBOX_KEYMASTER_RC()
             "/^service vendor\.keymaster-4-0_strongbox /a\\    interface android.hardware.keymaster@4.0::IKeymasterDevice strongbox" \
             "$RC"
     fi
+}
+
+_DISABLE_STALE_KEYMASTER_WAIT()
+{
+    LOG "- Disabling stale wait_for_keymaster init hook"
+    _FOR_EACH_EXYNOS_INIT 's/^\([[:space:]]*\)exec_start wait_for_keymaster$/\1# exec_start wait_for_keymaster/g'
 }
 
 _DISABLE_SURFACEFLINGER_SHADER_CACHE()
@@ -132,6 +141,35 @@ _DISABLE_UNSUPPORTED_BT_OFFLOAD()
     SET_PROP "product" "persist.vendor.bluetooth.a2dp_offload.disabled" "true"
     SET_PROP "product" "ro.bluetooth.leaudio_offload.supported" "false"
     SET_PROP "product" "persist.bluetooth.samsung.a2dp_offload.cap" --delete
+}
+
+_DISABLE_UNSUPPORTED_OUI9_INIT_WRITES()
+{
+    LOG "- Removing One UI 9 init writes rejected by the Exynos2100 kernel"
+    _SED_DELETE_IF_EXISTS "$WORK_DIR/system/system/etc/init/init.memory.rc" "/\/sys\/kernel\/mm\/transparent_hugepage\/khugepaged\/max_ptes_shared/d"
+    _SED_DELETE_IF_EXISTS "$WORK_DIR/system/system/etc/init/atrace.rc" "/\/sys\/kernel\/tracing\/synthetic_events/d"
+    _SED_DELETE_IF_EXISTS "$WORK_DIR/system/system/etc/init/hw/init.rc" \
+        -e "/\/dev\/blkio\/blkio\.weight/d" \
+        -e "/\/dev\/blkio\/background\/blkio\.weight/d" \
+        -e "/\/dev\/blkio\/background\/blkio\.bfq\.weight/d" \
+        -e "/\/dev\/blkio\/blkio\.group_idle/d" \
+        -e "/\/dev\/blkio\/background\/blkio\.group_idle/d" \
+        -e "/\/dev\/blkio\/background\/blkio\.prio\.class/d" \
+        -e "/\/dev\/blkio\/top\/blkio\.ssg\.boost_on/d" \
+        -e "/\/dev\/blkio\/high\/blkio\.ssg\.max_available_ratio/d" \
+        -e "/\/dev\/blkio\/normal\/blkio\.ssg\.max_available_ratio/d" \
+        -e "/\/dev\/blkio\/low\/blkio\.ssg\.max_available_ratio/d" \
+        -e "/\/sys\/class\/sensors\/grip_sensor\/grip_request_firmware/d" \
+        -e "/\/dev\/sys\/fs\/by-name\/userdata\/seq_file_ra_mul/d" \
+        -e "/\/sys\/class\/power_supply\/battery\/batt_update_data/d"
+    _SED_DELETE_IF_EXISTS "$WORK_DIR/system/system/etc/init/init.sec-charger.rc" "/\/sys\/class\/power_supply\/battery\/batt_update_data/d"
+    _SED_DELETE_IF_EXISTS "$WORK_DIR/vendor/etc/init/init.exynos2100.rc" \
+        -e "/\/dev\/freezer\/frozen\/freezer\.killable/d" \
+        -e "/\/dev\/cpuctl\/foreground\/cpu\.rt_runtime_us/d" \
+        -e "/\/dev\/cpuctl\/background\/cpu\.rt_runtime_us/d" \
+        -e "/\/dev\/cpuctl\/top-app\/cpu\.rt_runtime_us/d" \
+        -e "/\/proc\/sys\/net\/core\/netdev_max_backlog/d"
+    _SED_DELETE_IF_EXISTS "$WORK_DIR/vendor/etc/init/init.baseband.rc" "/\/proc\/sys\/net\/core\/netdev_max_backlog/d"
 }
 
 _PATCH_CONST_BEFORE_BOOL_IPUT()
@@ -388,7 +426,9 @@ _FIX_STRONGBOX_KEYMASTER_RC
 _DISABLE_SURFACEFLINGER_SHADER_CACHE
 _DISABLE_UNSUPPORTED_MAINLINE_FEATURES
 _DISABLE_UNSUPPORTED_BT_OFFLOAD
+_DISABLE_UNSUPPORTED_OUI9_INIT_WRITES
 _PATCH_BLUETOOTH_APEX_OFFLOAD
+_DISABLE_STALE_KEYMASTER_WAIT
 LOG_STEP_OUT
 
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/etc/selinux/mapping/29.0.cil" 0 0 644 "u:object_r:system_file:s0"
@@ -399,5 +439,5 @@ ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/etc/selinux/mapping/30.0.com
 ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "etc/ueventd.rc" 0 0 644 "u:object_r:vendor_configs_file:s0"
 ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "ueventd.rc" 0 0 644 "u:object_r:vendor_configs_file:s0"
 
-unset -f GET_SYSTEM_EXT _SED_DELETE_IF_EXISTS _FOR_EACH_EXYNOS_INIT _DISABLE_PERFETTO_TRACED _FIX_STRONGBOX_KEYMASTER_RC _DISABLE_SURFACEFLINGER_SHADER_CACHE _DISABLE_UNSUPPORTED_MAINLINE_FEATURES _DISABLE_UNSUPPORTED_BT_OFFLOAD _PATCH_CONST_BEFORE_BOOL_IPUT _PATCH_BOOL_METHOD_RETURN _PATCH_BLUETOOTH_APEX_OFFLOAD
+unset -f GET_SYSTEM_EXT _SED_DELETE_IF_EXISTS _FOR_EACH_EXYNOS_INIT _DISABLE_PERFETTO_TRACED _FIX_STRONGBOX_KEYMASTER_RC _DISABLE_STALE_KEYMASTER_WAIT _DISABLE_SURFACEFLINGER_SHADER_CACHE _DISABLE_UNSUPPORTED_MAINLINE_FEATURES _DISABLE_UNSUPPORTED_BT_OFFLOAD _DISABLE_UNSUPPORTED_OUI9_INIT_WRITES _PATCH_CONST_BEFORE_BOOL_IPUT _PATCH_BOOL_METHOD_RETURN _PATCH_BLUETOOTH_APEX_OFFLOAD
 LOG_STEP_OUT

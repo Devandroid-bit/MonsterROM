@@ -1,0 +1,6 @@
+id=monsterrom-postflash-livefix-t2s
+name=MonsterROM Postflash Live Fixes for t2s
+version=2026.06.23.064828
+versionCode=20260623064828
+author=Codex, Jonathan Waeremoes
+description=Post-flash KernelSU Next fixes for t2s: camera ImageCodec feature tokens, target NFC configs, Bluetooth offload props, bootsound and Vulkan boot guards, EROFS bind mounting, SELinux denials, stale keymaster wait guard, ueventd overlay, and enforcing-safe node/init modes.

@@ -37,10 +37,96 @@ SET_FLOATING_FEATURE_CONFIG_IN_FILE()
 NORMALIZE_CAMERA_VENDOR_LIB_INFO()
 {
     local VALUE="$1"
+    local ITEM
+    local NORMALIZED
+    local OLD_IFS
 
-    VALUE="${VALUE//image_codec.samsung.v1/image_codec}"
-    VALUE="${VALUE//image_codec.samsung/image_codec}"
-    sed -E 's/(^|,)image_codec(,image_codec)+/\1image_codec/g; s/,,+/,/g; s/^,//; s/,$//' <<< "$VALUE"
+    OLD_IFS="$IFS"
+    IFS=","
+    for ITEM in $VALUE; do
+        IFS="$OLD_IFS"
+        [ "$ITEM" ] || continue
+
+        case ",$NORMALIZED," in
+            *",$ITEM,"*) ;;
+            *) NORMALIZED="${NORMALIZED:+$NORMALIZED,}$ITEM" ;;
+        esac
+        IFS=","
+    done
+    IFS="$OLD_IFS"
+
+    echo "$NORMALIZED"
+}
+
+GET_CAMERA_VENDOR_LIB_FEATURE()
+{
+    local VALUE="$1"
+    local FEATURE="$2"
+    local ITEM
+    local OLD_IFS
+
+    OLD_IFS="$IFS"
+    IFS=","
+    for ITEM in $VALUE; do
+        IFS="$OLD_IFS"
+        case "$ITEM" in
+            "$FEATURE".*)
+                echo "$ITEM"
+                IFS="$OLD_IFS"
+                return 0
+                ;;
+            "$FEATURE")
+                echo "${FEATURE}.samsung.v2"
+                IFS="$OLD_IFS"
+                return 0
+                ;;
+        esac
+        IFS=","
+    done
+    IFS="$OLD_IFS"
+
+    return 1
+}
+
+REPLACE_CAMERA_VENDOR_LIB_FEATURE()
+{
+    local VALUE="$1"
+    local FEATURE="$2"
+    local FEATURE_TOKEN="$3"
+    local ITEM
+    local NORMALIZED
+    local REPLACED=false
+    local OLD_IFS
+
+    OLD_IFS="$IFS"
+    IFS=","
+    for ITEM in $VALUE; do
+        IFS="$OLD_IFS"
+        [ "$ITEM" ] || continue
+
+        case "$ITEM" in
+            "$FEATURE"|"$FEATURE".*)
+                if ! $REPLACED; then
+                    NORMALIZED="${NORMALIZED:+$NORMALIZED,}$FEATURE_TOKEN"
+                    REPLACED=true
+                fi
+                ;;
+            *)
+                case ",$NORMALIZED," in
+                    *",$ITEM,"*) ;;
+                    *) NORMALIZED="${NORMALIZED:+$NORMALIZED,}$ITEM" ;;
+                esac
+                ;;
+        esac
+        IFS=","
+    done
+    IFS="$OLD_IFS"
+
+    if ! $REPLACED; then
+        NORMALIZED="${NORMALIZED:+$NORMALIZED,}$FEATURE_TOKEN"
+    fi
+
+    echo "$NORMALIZED"
 }
 
 APPEND_CAMERA_VENDOR_LIB_INFO()
@@ -308,18 +394,21 @@ VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO_RAW="$(GET_FLOATING_FEATURE_CONFIG "$WORK_D
 SOURCE_CAMERA_CONFIG_VENDOR_LIB_INFO="$(NORMALIZE_CAMERA_VENDOR_LIB_INFO "$SOURCE_CAMERA_CONFIG_VENDOR_LIB_INFO_RAW")"
 TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO="$(NORMALIZE_CAMERA_VENDOR_LIB_INFO "$TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO_RAW")"
 VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO="$(NORMALIZE_CAMERA_VENDOR_LIB_INFO "$VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO_RAW")"
-if [[ "$SOURCE_CAMERA_CONFIG_VENDOR_LIB_INFO" == *"image_codec"* ]] && \
-        [[ ",$TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO," != *",image_codec,"* ]]; then
-    LOG "- Enabling Samsung image codec camera node"
-    TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO="$(APPEND_CAMERA_VENDOR_LIB_INFO "$TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO" "image_codec")"
+CAMERA_IMAGE_CODEC_FEATURE="$(GET_CAMERA_VENDOR_LIB_FEATURE "$SOURCE_CAMERA_CONFIG_VENDOR_LIB_INFO" "image_codec")"
+if [ "$CAMERA_IMAGE_CODEC_FEATURE" ] && \
+        [[ ",$TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO," != *",$CAMERA_IMAGE_CODEC_FEATURE,"* ]]; then
+    LOG "- Enabling Samsung image codec camera node ($CAMERA_IMAGE_CODEC_FEATURE)"
+    TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO="$(REPLACE_CAMERA_VENDOR_LIB_FEATURE \
+        "$TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO" "image_codec" "$CAMERA_IMAGE_CODEC_FEATURE")"
 fi
 if [[ "$TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO" != "$TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO_RAW" ]]; then
     SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_CAMERA_CONFIG_VENDOR_LIB_INFO" "$TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO"
 fi
-if [[ "$SOURCE_CAMERA_CONFIG_VENDOR_LIB_INFO" == *"image_codec"* ]] && \
-        [[ ",$VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO," != *",image_codec,"* ]]; then
-    LOG "- Enabling Samsung image codec camera node in vendor feature config"
-    VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO="$(APPEND_CAMERA_VENDOR_LIB_INFO "$VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO" "image_codec")"
+if [ "$CAMERA_IMAGE_CODEC_FEATURE" ] && \
+        [[ ",$VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO," != *",$CAMERA_IMAGE_CODEC_FEATURE,"* ]]; then
+    LOG "- Enabling Samsung image codec camera node in vendor feature config ($CAMERA_IMAGE_CODEC_FEATURE)"
+    VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO="$(REPLACE_CAMERA_VENDOR_LIB_FEATURE \
+        "$VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO" "image_codec" "$CAMERA_IMAGE_CODEC_FEATURE")"
 fi
 if [[ "$VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO" != "$VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO_RAW" ]]; then
     SET_FLOATING_FEATURE_CONFIG_IN_FILE \
@@ -489,5 +578,8 @@ unset SOURCE_FIRMWARE_PATH TARGET_FIRMWARE_PATH \
     SOURCE_SAIV_CONFIG_ARDOODLE_LIB TARGET_SAIV_CONFIG_ARDOODLE_LIB \
     SOURCE_CAMERA_CONFIG_VENDOR_LIB_INFO_RAW TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO_RAW VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO_RAW \
     SOURCE_CAMERA_CONFIG_VENDOR_LIB_INFO TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO \
+    CAMERA_IMAGE_CODEC_FEATURE \
     SOURCE_CAMERA_DOCUMENTSCAN_SOLUTIONS TARGET_CAMERA_DOCUMENTSCAN_SOLUTIONS
-unset -f _LOG LOG_MISSING_PATCHES SET_FLOATING_FEATURE_CONFIG_IN_FILE NORMALIZE_CAMERA_VENDOR_LIB_INFO APPEND_CAMERA_VENDOR_LIB_INFO
+unset -f _LOG LOG_MISSING_PATCHES SET_FLOATING_FEATURE_CONFIG_IN_FILE \
+    NORMALIZE_CAMERA_VENDOR_LIB_INFO GET_CAMERA_VENDOR_LIB_FEATURE REPLACE_CAMERA_VENDOR_LIB_FEATURE \
+    APPEND_CAMERA_VENDOR_LIB_INFO

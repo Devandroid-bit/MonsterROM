@@ -197,7 +197,7 @@
 
     const-string p0, "persist.sys.unica.bootsound"
 
-    const/4 v0, 0x1
+    const/4 v0, 0x0
 
     invoke-static {p0, v0}, Landroid/os/SemSystemProperties;->getBoolean(Ljava/lang/String;Z)Z
 
@@ -209,7 +209,7 @@
 .method public isControllable()Z
     .locals 0
 
-    const/4 p0, 0x1
+    const/4 p0, 0x0
 
     return p0
 .end method
@@ -392,13 +392,9 @@
 
     const-string v0, "persist.sys.unica.bootsound"
 
-    invoke-static {p1}, Ljava/lang/Boolean;->toString(Z)Ljava/lang/String;
-
-    move-result-object v1
+    const-string v1, "false"
 
     invoke-static {v0, v1}, Landroid/os/SemSystemProperties;->set(Ljava/lang/String;Ljava/lang/String;)V
-
-    invoke-virtual {p0, p1}, Lio/mesalabs/unica/settings/ui/BootSoundPreferenceController;->playPowerOnSound(Z)V
 
     const/4 p0, 0x1
 

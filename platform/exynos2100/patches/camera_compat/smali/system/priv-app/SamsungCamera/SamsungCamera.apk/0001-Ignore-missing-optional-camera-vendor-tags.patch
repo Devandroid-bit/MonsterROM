@@ -1,0 +1,45 @@
+From 8e1bfbf2f9d53773c92a5b18f0b4af6502f0a3c4 Mon Sep 17 00:00:00 2001
+From: ditternation <ditternation@localhost>
+Date: Tue, 23 Jun 2026 00:54:00 +0200
+Subject: [PATCH] Ignore missing optional camera vendor tags
+
+Android 17 SamsungCamera asks the legacy Exynos2100 camera HAL for a few
+newer optional vendor tags that are not advertised by the target vendor.
+The wrapper already falls back to null, but logs every miss as an error on
+each camera open. Keep the null fallback and avoid the noisy error path.
+---
+ smali_classes2/com/samsung/android/camera/core2/local/vendorkey/SemCameraCharacteristics.smali | 19 -------------------
+ 1 file changed, 19 deletions(-)
+
+diff --git a/smali_classes2/com/samsung/android/camera/core2/local/vendorkey/SemCameraCharacteristics.smali b/smali_classes2/com/samsung/android/camera/core2/local/vendorkey/SemCameraCharacteristics.smali
+index c2782fd2a..d6a9f0f42 100644
+--- a/smali_classes2/com/samsung/android/camera/core2/local/vendorkey/SemCameraCharacteristics.smali
++++ b/smali_classes2/com/samsung/android/camera/core2/local/vendorkey/SemCameraCharacteristics.smali
+@@ -1185,25 +1185,5 @@
+     :catch_0
+     move-exception p0
+ 
+-    new-instance v2, Ljava/lang/StringBuilder;
+-
+-    const-string v3, "UnsupportedOperationException - "
+-
+-    invoke-direct {v2, v3}, Ljava/lang/StringBuilder;-><init>(Ljava/lang/String;)V
+-
+-    invoke-virtual {v2, p1}, Ljava/lang/StringBuilder;->append(Ljava/lang/Object;)Ljava/lang/StringBuilder;
+-
+-    const-string p1, " is not supported - "
+-
+-    invoke-virtual {v2, p1}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+-
+-    invoke-virtual {v2, p0}, Ljava/lang/StringBuilder;->append(Ljava/lang/Object;)Ljava/lang/StringBuilder;
+-
+-    invoke-virtual {v2}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+-
+-    move-result-object p0
+-
+-    invoke-static {v1, p0}, Landroid/util/Log;->e(Ljava/lang/String;Ljava/lang/String;)I
+-
+     return-object v0
+ .end method
+-- 
+2.52.0

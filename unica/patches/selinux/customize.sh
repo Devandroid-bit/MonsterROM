@@ -23,6 +23,7 @@ init.svc.vendor.wvkprov_server_hal
 
 SERVICE_DUPLICATES+="
 vendor.samsung.frameworks.codecsolution.ISehCodecSolution/default
+vendor.samsung.hardware.security.vaultkeeper.ISehVaultKeeper/default
 "
 
 # One UI 7.0 additions
@@ -160,9 +161,9 @@ for e in $SERVICE_DUPLICATES; do
         # the problematic entry is currently present in system_ext, check if we need to remove it
         if grep -q "^$e.*" "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts" 2> /dev/null; then
             PATCHED=true
-            # the problematic entry is found in target vendor
+            # the problematic entry is found in target vendor; keep that owner for vendor services
             LOG "- \"$e\" SELinux duplicate service found. Removing"
-            sed -i "s|^$e|#SEC_DUPLICATE: $e|g" "$WORK_DIR/vendor/etc/selinux/vendor_service_contexts"
+            sed -i "s|^$e|#SEC_DUPLICATE: $e|g" "$WORK_DIR/$(GET_SYSTEM_EXT)/etc/selinux/system_ext_service_contexts"
         fi
     fi
 done
@@ -353,6 +354,29 @@ _APPEND_CIL_RULE()
     fi
 }
 
+_APPEND_GENFSCON()
+{
+    local FILE="$1"
+    local FS="$2"
+    local PATH="$3"
+    local TYPE="$4"
+    local RULE
+
+    [ -f "$FILE" ] || return 0
+
+    if ! _CIL_SYMBOL_EXISTS "$TYPE"; then
+        LOGW "SELinux type not found for genfscon $FS $PATH: $TYPE"
+        return 0
+    fi
+
+    RULE="(genfscon $FS $PATH (u object_r $TYPE ((s0) (s0))))"
+    if ! grep -q -F "$RULE" "$FILE"; then
+        PATCHED=true
+        LOG "- Adding SELinux genfscon: $FS $PATH -> $TYPE"
+        printf "%s\n" "$RULE" >> "$FILE"
+    fi
+}
+
 _APPEND_SERVICE_FIND()
 {
     local FILE="$1"
@@ -413,6 +437,7 @@ _APPEND_PROCESS_ALLOW()
 
 SYSTEM_EXT_SEPOLICY="$WORK_DIR/$(GET_SYSTEM_EXT)/etc/selinux/system_ext_sepolicy.cil"
 VENDOR_SEPOLICY="$WORK_DIR/vendor/etc/selinux/vendor_sepolicy.cil"
+PLAT_SEPOLICY="$WORK_DIR/system/system/etc/selinux/plat_sepolicy.cil"
 SYSTEM_EXT_SEAPP_RULE="user=oem_5959 seinfo=platform name=com.samsung.android.kgclient domain=kg_app type=app_data_file levelFrom=user"
 for SYSTEM_EXT_SEAPP in \
     "$WORK_DIR/$(GET_SYSTEM_EXT)/etc/selinux/system_ext_seapp_contexts" \
@@ -421,6 +446,13 @@ for SYSTEM_EXT_SEAPP in \
     "$WORK_DIR/system/system/system_ext/etc/selinux/system_ext_seapp_contexts"; do
     _APPEND_SEAPP_CONTEXT "$SYSTEM_EXT_SEAPP" "$SYSTEM_EXT_SEAPP_RULE"
 done
+_APPEND_GENFSCON "$PLAT_SEPOLICY" "sysfs" "/class/nfc_sec/pvdd" "sysfs_nfc_power_writable"
+if _CIL_SYMBOL_EXISTS "init" && _CIL_SYMBOL_EXISTS "sysfs_nfc_power_writable"; then
+    _APPEND_CIL_RULE "$PLAT_SEPOLICY" "(allow init sysfs_nfc_power_writable (file (open read getattr write)))"
+fi
+if _CIL_SYMBOL_EXISTS "vendor_init" && _CIL_SYMBOL_EXISTS "sysfs_nfc_power_writable"; then
+    _APPEND_CIL_RULE "$PLAT_SEPOLICY" "(allow vendor_init sysfs_nfc_power_writable (file (open read getattr write)))"
+fi
 _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "emservice" "vendor_em_tstate_prop"
 _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "emservice" "em_version_prop"
 _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "hermesd" "vendor_securehw_prop"
@@ -442,13 +474,18 @@ _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "scs" "exported_system_prop"
 _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "bootchecker" "system_prop"
 _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "at_distributor" "radio_prop"
 _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "samsungpowersoundplay" "audio_prop"
+_APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "remotedisplay" "audio_prop"
 _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "rdxd" "debug_prop"
 _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "priv_app" "log_tag_prop"
 _APPEND_PROP_ALLOW "$SYSTEM_EXT_SEPOLICY" "priv_app" "sqlite_log_prop"
 _APPEND_PROP_ALLOW "$VENDOR_SEPOLICY" "macloader" "vendor_default_prop_30_0"
 _APPEND_PROP_ALLOW "$VENDOR_SEPOLICY" "macloader" "vendor_default_prop"
+_APPEND_PROP_ALLOW "$VENDOR_SEPOLICY" "hal_wifi_hostapd_default" "exported_wifi_prop"
 _APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "samsungpowersoundplay" "audio_service"
 _APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "platform_app_36" "aidl_codecsolution_service"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "priv_app_36" "aidl_codecsolution_service"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "priv_app" "aidl_codecsolution_service"
+_APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "platform_app_36" "hal_snap_service"
 _APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "platform_app_36" "cameraworker_service"
 _APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "platform_app_36" "sem_ssdid_service"
 [ -z "$ENGMODE_SERVICE_TYPE" ] || _APPEND_SERVICE_FIND "$SYSTEM_EXT_SEPOLICY" "platform_app_36" "$ENGMODE_SERVICE_TYPE"
@@ -481,5 +518,5 @@ if ! $PATCHED; then
     LOG "\033[0;33m! Nothing to do\033[0m"
 fi
 
-unset ENTRIES DUPLICATES SERVICE_DUPLICATES CIL_NAME PATCHED SELINUX_DIRS VENDOR_API_LIST MAPPING_FILE ENGMODE_SERVICE_TYPE ENGMODE_SERVICE_NAME SYSTEM_EXT_SEPOLICY VENDOR_SEPOLICY SYSTEM_EXT_SEAPP SYSTEM_EXT_SEAPP_RULE
-unset -f GET_SYSTEM_EXT _CLEAN_UNDECLARED_MAPPING_ATTRS _TYPE_EXISTS _CIL_SYMBOL_EXISTS _APPEND_CONTEXT _APPEND_SEAPP_CONTEXT _SELECT_CIL_TYPE _APPEND_PROP_ALLOW _APPEND_PROP_READ _APPEND_CIL_RULE _APPEND_SERVICE_FIND _APPEND_HWSERVICE_FIND _APPEND_PROCESS_ALLOW
+unset ENTRIES DUPLICATES SERVICE_DUPLICATES CIL_NAME PATCHED SELINUX_DIRS VENDOR_API_LIST MAPPING_FILE ENGMODE_SERVICE_TYPE ENGMODE_SERVICE_NAME SYSTEM_EXT_SEPOLICY VENDOR_SEPOLICY PLAT_SEPOLICY SYSTEM_EXT_SEAPP SYSTEM_EXT_SEAPP_RULE
+unset -f GET_SYSTEM_EXT _CLEAN_UNDECLARED_MAPPING_ATTRS _TYPE_EXISTS _CIL_SYMBOL_EXISTS _APPEND_CONTEXT _APPEND_SEAPP_CONTEXT _SELECT_CIL_TYPE _APPEND_PROP_ALLOW _APPEND_PROP_READ _APPEND_CIL_RULE _APPEND_GENFSCON _APPEND_SERVICE_FIND _APPEND_HWSERVICE_FIND _APPEND_PROCESS_ALLOW

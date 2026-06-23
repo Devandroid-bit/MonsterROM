@@ -1,0 +1,16 @@
+allow priv_app_36 aidl_codecsolution_service service_manager find
+allow priv_app aidl_codecsolution_service service_manager find
+allow platform_app_36 hal_snap_service service_manager find
+allow remotedisplay audio_prop property_service set
+allow remotedisplay audio_prop file { read getattr map open }
+allow hal_wifi_hostapd_default exported_wifi_prop property_service set
+allow hal_wifi_hostapd_default exported_wifi_prop file { read getattr map open }
+allow system_server sysfs_usb file { open read getattr write }
+allow system_app sysfs_usb file { open read getattr write }
+allow system_server video_device chr_file { open read write ioctl getattr }
+allow system_app video_device chr_file { open read write ioctl getattr }
+allow init sysfs file { open read getattr write setattr }
+allow vendor_init sysfs file { open read getattr write setattr }
+allow init sysfs_nfc_power_writable file { open read getattr write setattr }
+allow vendor_init sysfs_nfc_power_writable file { open read getattr write setattr }
+allow system_server sysfs_nfc_power_writable file { open read getattr write ioctl }

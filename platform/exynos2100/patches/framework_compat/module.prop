@@ -1,0 +1,3 @@
+name=Framework compatibility
+author=ditternation
+description=Avoid unsupported One UI 9 AIDL HAL probes on legacy Exynos2100 vendor stacks.

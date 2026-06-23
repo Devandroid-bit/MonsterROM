@@ -77,6 +77,21 @@ _CLEAN_LEGACY_EXYNOS_VINTF_MATRICES()
     done
 }
 
+_COPY_TARGET_VENDOR_VINTF_FRAGMENTS()
+{
+    local DIR="$SRC_DIR/target/$TARGET_CODENAME/vintf/vendor_manifest"
+    local FILE
+
+    [ -d "$DIR" ] || return 0
+
+    EVAL "mkdir -p \"$WORK_DIR/vendor/etc/vintf/manifest\""
+    for FILE in "$DIR"/*.xml; do
+        [ -f "$FILE" ] || continue
+        LOG "- Adding /vendor/etc/vintf/manifest/$(basename "$FILE")"
+        EVAL "cp -a \"$FILE\" \"$WORK_DIR/vendor/etc/vintf/manifest/$(basename "$FILE")\""
+    done
+}
+
 if [ -f "$SRC_DIR/target/$TARGET_CODENAME/vintf/compatibility_matrix.device.xml" ]; then
     LOG "- Adding /system/system/etc/vintf/compatibility_matrix.device.xml"
     EVAL "cp -a \"$SRC_DIR/target/$TARGET_CODENAME/vintf/compatibility_matrix.device.xml\" \"$WORK_DIR/system/system/etc/vintf/compatibility_matrix.device.xml\""
@@ -93,6 +108,7 @@ elif [[ "$SOURCE_PLATFORM_SDK_VERSION" == "$TARGET_PLATFORM_SDK_VERSION" ]]; the
     ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/etc/vintf/manifest.xml"
 fi
 
+_COPY_TARGET_VENDOR_VINTF_FRAGMENTS
 _CLEAN_LEGACY_EXYNOS_VINTF_MATRICES
 
-unset -f _LOG _REMOVE_VINTF_HAL_BLOCK _CLEAN_LEGACY_EXYNOS_VINTF_MATRICES
+unset -f _LOG _REMOVE_VINTF_HAL_BLOCK _CLEAN_LEGACY_EXYNOS_VINTF_MATRICES _COPY_TARGET_VENDOR_VINTF_FRAGMENTS
