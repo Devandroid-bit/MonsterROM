@@ -15,12 +15,21 @@ FILE=""
 INPUT_FILE=""
 OUTPUT_PATH=""
 
-THREAD_COUNT=$(awk -v max="$(nproc)" '/MemTotal/ {
+THREAD_MAX="$(nproc)"
+[ "$THREAD_MAX" -gt "4" ] && THREAD_MAX=4
+
+THREAD_COUNT=$(awk -v max="$THREAD_MAX" '/MemTotal/ {
   tc = int(($2 + 1048575) / 2097152);
   print (tc < 1 ? 1 : (tc > max ? max : tc));
 }' /proc/meminfo)
 
 [ -n "$GITHUB_ACTIONS" ] && THREAD_COUNT=1
+[ -n "${APKTOOL_THREAD_COUNT:-}" ] && THREAD_COUNT="$APKTOOL_THREAD_COUNT"
+
+APKTOOL_JAVA_HEAP_MB="${APKTOOL_JAVA_HEAP_MB:-$(awk '/MemTotal/ {
+  heap = int(($2 / 1024) * 0.75);
+  print (heap < 2048 ? 2048 : (heap > 10240 ? 10240 : heap));
+}' /proc/meminfo)}"
 
 APKTOOL_TMP_DIR=""
 
@@ -34,7 +43,12 @@ _EVAL_APKTOOL()
     rm -rf "$APKTOOL_TMP_DIR"
     mkdir -p "$APKTOOL_TMP_DIR" || return 1
 
-    EVAL "TMPDIR=\"$APKTOOL_TMP_DIR\" JAVA_TOOL_OPTIONS=\"${JAVA_TOOL_OPTIONS:-} -Djava.io.tmpdir=$APKTOOL_TMP_DIR\" $CMD"
+    local JAVA_OPTS="${JAVA_TOOL_OPTIONS:-}"
+    if [[ "$JAVA_OPTS" != *"-Xmx"* ]]; then
+        JAVA_OPTS="-Xmx${APKTOOL_JAVA_HEAP_MB}m $JAVA_OPTS"
+    fi
+
+    EVAL "TMPDIR=\"$APKTOOL_TMP_DIR\" JAVA_TOOL_OPTIONS=\"$JAVA_OPTS -Djava.io.tmpdir=$APKTOOL_TMP_DIR\" $CMD"
     STATUS=$?
 
     rm -rf "$APKTOOL_TMP_DIR"
