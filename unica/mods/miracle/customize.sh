@@ -15,3 +15,8 @@ if ! $TARGET_AUDIO_SUPPORT_ACH_RINGTONE; then
     SET_PROP "vendor" "ro.config.notification_sound_2" "Three_Star.ogg"
     LOG_STEP_OUT
 fi
+
+if [ -f "$WORK_DIR/system/system/priv-app/SecSoundPicker/SecSoundPicker.apk" ]; then
+    APPLY_PATCH "system" "system/priv-app/SecSoundPicker/SecSoundPicker.apk" \
+        "$MODPATH/brandsound/SecSoundPicker.apk/0001-Enable-SUPPORT_SAMSUNG_BRAND_SOUND_ONEUI_7.patch"
+fi

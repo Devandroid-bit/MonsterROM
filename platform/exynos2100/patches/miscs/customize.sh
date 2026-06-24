@@ -244,6 +244,38 @@ _PATCH_BOOL_METHOD_RETURN()
     LOG "- Forced $METHOD to return $VALUE"
 }
 
+_APEX_PAYLOAD_COPY_OUT()
+{
+    local PAYLOAD="$1"
+    local SRC="$2"
+    local DST="$3"
+
+    if command -v e2cp > /dev/null 2>&1; then
+        EVAL "e2cp \"$PAYLOAD:$SRC\" \"$DST\""
+    elif command -v debugfs > /dev/null 2>&1; then
+        EVAL "debugfs -R \"dump -p $SRC $DST\" \"$PAYLOAD\""
+    else
+        ABORT "Neither e2cp nor debugfs is available to unpack APEX image"
+    fi
+}
+
+_APEX_PAYLOAD_COPY_IN()
+{
+    local SRC="$1"
+    local PAYLOAD="$2"
+    local DST="$3"
+
+    if command -v e2cp > /dev/null 2>&1 && command -v e2rm > /dev/null 2>&1; then
+        EVAL "e2rm \"$PAYLOAD:$DST\""
+        EVAL "e2cp \"$SRC\" \"$PAYLOAD:$DST\""
+    elif command -v debugfs > /dev/null 2>&1; then
+        debugfs -w -R "rm $DST" "$PAYLOAD" >/dev/null 2>&1 || true
+        EVAL "debugfs -w -R \"write $SRC $DST\" \"$PAYLOAD\""
+    else
+        ABORT "Neither e2cp/e2rm nor debugfs is available to update APEX image"
+    fi
+}
+
 _PATCH_BLUETOOTH_APEX_OFFLOAD()
 {
     local APEX="$WORK_DIR/system/system/apex/com.android.bt.apex"
@@ -280,8 +312,8 @@ _PATCH_BLUETOOTH_APEX_OFFLOAD()
     unzip -q "$APEX" -d "$APEX_SRC"
     cp -f "$APEX_SRC/apex_payload.img" "$PAYLOAD"
 
-    e2cp "$PAYLOAD:/app/Bluetooth@CP2A.260605.016/Bluetooth.apk" "$BT_APK"
-    e2cp "$PAYLOAD:/javalib/framework-bluetooth.jar" "$FW_JAR"
+    _APEX_PAYLOAD_COPY_OUT "$PAYLOAD" "/app/Bluetooth@CP2A.260605.016/Bluetooth.apk" "$BT_APK"
+    _APEX_PAYLOAD_COPY_OUT "$PAYLOAD" "/javalib/framework-bluetooth.jar" "$FW_JAR"
 
     TMPDIR="$APKTOOL_TMP" JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Djava.io.tmpdir=$APKTOOL_TMP" \
         "$TOOLS_DIR/bin/apktool" d --no-debug-info -r -j "$(nproc)" -f -o "$BT_APK_DECODED" "$BT_APK" >/dev/null
@@ -322,10 +354,8 @@ _PATCH_BLUETOOTH_APEX_OFFLOAD()
     "$TOOLS_DIR/bin/zipalign" -p 4 \
         "$FW_JAR_DECODED/dist/framework-bluetooth.jar" "$FW_JAR_PATCHED"
 
-    e2rm "$PAYLOAD:/app/Bluetooth@CP2A.260605.016/Bluetooth.apk"
-    e2cp "$BT_APK_PATCHED" "$PAYLOAD:/app/Bluetooth@CP2A.260605.016/Bluetooth.apk"
-    e2rm "$PAYLOAD:/javalib/framework-bluetooth.jar"
-    e2cp "$FW_JAR_PATCHED" "$PAYLOAD:/javalib/framework-bluetooth.jar"
+    _APEX_PAYLOAD_COPY_IN "$BT_APK_PATCHED" "$PAYLOAD" "/app/Bluetooth@CP2A.260605.016/Bluetooth.apk"
+    _APEX_PAYLOAD_COPY_IN "$FW_JAR_PATCHED" "$PAYLOAD" "/javalib/framework-bluetooth.jar"
 
     "$TOOLS_DIR/bin/avbtool" erase_footer --image "$PAYLOAD"
     e2fsck -fy "$PAYLOAD" >/dev/null
