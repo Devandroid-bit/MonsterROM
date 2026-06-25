@@ -38,8 +38,8 @@ if [ ! -f "$WORK_DIR/vendor/lib64/libcdsprpc.so" ] && \
         [ -f "$MODPATH/vendor/lib64/libcdsprpc.so" ]; then
     LOG "- Adding Exynos-safe libcdsprpc camera fallback"
     EVAL "cp -a \"$MODPATH/vendor/lib64/libcdsprpc.so\" \"$WORK_DIR/vendor/lib64/libcdsprpc.so\""
-    SET_METADATA "vendor" "lib64/libcdsprpc.so" 0 0 644 "u:object_r:vendor_file:s0"
 fi
+SET_METADATA "vendor" "lib64/libcdsprpc.so" 0 0 644 "u:object_r:vendor_file:s0"
 
 if grep -q "super_night.mpi.v2" "$WORK_DIR/system/system/etc/floating_feature.xml" \
         "$WORK_DIR/vendor/etc/floating_feature.xml" 2> /dev/null; then
