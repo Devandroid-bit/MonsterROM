@@ -1,5 +1,7 @@
 SMART_SUGGESTIONS_APK="system/priv-app/SamsungSmartSuggestions/SamsungSmartSuggestions.apk"
 SMART_SUGGESTIONS_RUNE="smali_classes15/com/samsung/android/smartsuggestions/featureconfig/rune/Rune.smali"
+SMART_SUGGESTIONS_SSCO_REQUESTER="smali_classes15/com/samsung/android/smartsuggestions/search/core/embedding/i.smali"
+SMART_SUGGESTIONS_SSCO_PROVIDER="smali_classes15/com/samsung/android/smartsuggestions/search/provider/ProviderCallMethod\$25.smali"
 
 ENABLE_SMART_SUGGESTIONS_RUNE()
 {
@@ -9,6 +11,23 @@ ENABLE_SMART_SUGGESTIONS_RUNE()
 }
 
 DECODE_APK "system" "$SMART_SUGGESTIONS_APK" || return 1
+
+LOG "- Silencing unsupported Smart Suggestions SSCO probes"
+SMALI_PATCH "system" "$SMART_SUGGESTIONS_APK" "$SMART_SUGGESTIONS_SSCO_REQUESTER" "replace" \
+    "c()J" \
+    "invoke-static {v2, v1, v0}, Lcom/samsung/android/smartsuggestions/search/util/v;->k(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V" \
+    "nop" \
+    > /dev/null || true
+SMALI_PATCH "system" "$SMART_SUGGESTIONS_APK" "$SMART_SUGGESTIONS_SSCO_REQUESTER" "replace" \
+    "d(Ljava/lang/String;)Z" \
+    "invoke-static {v2, p0, v1}, Lcom/samsung/android/smartsuggestions/search/util/v;->k(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V" \
+    "nop" \
+    > /dev/null || true
+SMALI_PATCH "system" "$SMART_SUGGESTIONS_APK" "$SMART_SUGGESTIONS_SSCO_PROVIDER" "replace" \
+    "invoke(Ljava/lang/String;Ljava/lang/String;Landroid/os/Bundle;)Landroid/os/Bundle;" \
+    "invoke-static {v1, p1, p2}, Lcom/samsung/android/smartsuggestions/search/util/v;->k(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V" \
+    "nop" \
+    > /dev/null || true
 
 LOG "- Enabling Smart Suggestions AI feature gates"
 ENABLE_SMART_SUGGESTIONS_RUNE "getAI_VERSION_FEATURE_ENABLED()Z"
@@ -149,4 +168,4 @@ ENABLE_SMART_SUGGESTIONS_RUNE "getSUPPORT_WEEKEND_RECOMMEND_CARD()Z"
 ENABLE_SMART_SUGGESTIONS_RUNE "getSUPPORT_YOUTUBE_NEW_CARD()Z"
 
 unset -f ENABLE_SMART_SUGGESTIONS_RUNE
-unset SMART_SUGGESTIONS_APK SMART_SUGGESTIONS_RUNE
+unset SMART_SUGGESTIONS_APK SMART_SUGGESTIONS_RUNE SMART_SUGGESTIONS_SSCO_REQUESTER SMART_SUGGESTIONS_SSCO_PROVIDER

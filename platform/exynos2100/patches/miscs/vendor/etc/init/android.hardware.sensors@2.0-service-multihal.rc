@@ -1,0 +1,21 @@
+service vendor.sensors-hal-2-0-multihal /vendor/bin/hw/android.hardware.sensors@2.0-service.multihal
+    class hal
+    disabled
+    user system
+    group system wakelock context_hub input
+    writepid /dev/cpuset/system-background/tasks
+    capabilities BLOCK_SUSPEND
+    rlimit rtprio 10 10
+
+service vendor.monsterrom-wait-sensors-ready /system/bin/sh /vendor/bin/monsterrom_wait_sensors_ready.sh
+    class core
+    user root
+    group root system
+    oneshot
+    disabled
+
+on boot
+    start vendor.monsterrom-wait-sensors-ready
+
+on property:vendor.monsterrom.sensors_ready=1
+    start vendor.sensors-hal-2-0-multihal

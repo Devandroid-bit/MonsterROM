@@ -2,12 +2,15 @@ firmware_directories /spu/ /vendor/firmware/wifi/
 # Framework USB host restrictor toggles this node during boot.
 /sys/class/usb_notify/usb_control usb_sl 0664 system system
 /sys/class/usb_notify/usb_control disable 0664 system system
+/sys/class/usb_notify/usb_control usb_hw_param 0664 system system
 # Samsung NFC init toggles PVDD before the NFC HAL comes up.
 /sys/class/nfc_sec pvdd 0664 system system
 # SurfaceFlinger and SehLight read/tune these display nodes during boot.
 /sys/class/lcd/panel smooth_dim 0664 system system
 /sys/class/lcd/panel screen_mode 0664 system system
 /sys/class/lcd/panel vrr_lfd 0664 system system
+/sys/class/power_supply/battery batt_after_manufactured 0664 system system
+/sys/class/sec/switch afc_disable 0664 system radio
 # Early init writes these cgroup/proc/sysfs nodes on One UI 9.0.
 /sys/kernel/mm/transparent_hugepage/khugepaged max_ptes_shared 0664 root system
 /proc/sys/net/core netdev_max_backlog 0664 root system
@@ -297,6 +300,17 @@ firmware_directories /spu/ /vendor/firmware/wifi/
 /sys/devices/platform/11ec0000.spi/spi_master/spi7/spi7.0/iio:device*    buffer/length       0660    system    system
 /sys/bus/iio/devices/iio:device*    *           0664   system     radio
 /sys/bus/iio/devices/iio:device*	poll_delay	0660	system	system
+/sys/bus/iio/devices/iio:device*	buffer/enable	0660	system	system
+/sys/bus/iio/devices/iio:device*	buffer/length	0660	system	system
+/sys/class/sensors/ssp_sensor	data_injection_enable	0664	system	radio
+/sys/class/sensors/ssp_sensor	enable	0664	system	radio
+/sys/class/sensors/ssp_sensor	enable_irq	0664	system	radio
+/sys/class/sensors/ssp_sensor	mcu_sleep_test	0664	system	radio
+/sys/class/sensors/ssp_sensor	mcu_test	0664	system	radio
+/sys/class/sensors/ssp_sensor	sensor_dump	0664	system	radio
+/sys/class/sensors/ssp_sensor	ssp_control	0664	system	radio
+/sys/class/sensors/ssp_sensor	ssp_flush	0220	system	radio
+/sys/class/sensors/sensor_dev	flush	0220	system	radio
 /sys/devices/virtual/input/input*    poll_delay    0660    system    radio
 /sys/devices/virtual/input/input*    enable        0660    system    radio
 /sys/devices/virtual/input/input*    enable2       0660    system    radio

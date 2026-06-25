@@ -86,6 +86,40 @@ _DISABLE_STALE_KEYMASTER_WAIT()
     _FOR_EACH_EXYNOS_INIT 's/^\([[:space:]]*\)exec_start wait_for_keymaster$/\1# exec_start wait_for_keymaster/g'
 }
 
+_PATCH_SENSORHUB_SYSFS_LOG_NOISE()
+{
+    local SENSORHUB="$WORK_DIR/vendor/lib64/sensors.sensorhub.so"
+
+    [ -f "$SENSORHUB" ] || return 0
+
+    LOG "- Suppressing noisy sensorhub sysfs write error logs"
+    HEX_PATCH "$SENSORHUB" \
+        "c0008052e30316aae503142a245d0094e00315aa" \
+        "c0008052e30316aae503142a1f2003d5e00315aa" || true
+    HEX_PATCH "$SENSORHUB" \
+        "c0008052e30313aae503142a115d0094" \
+        "c0008052e30313aae503142a1f2003d5" || true
+}
+
+_DROP_MISSING_SENSOR_HAL_BLOBS()
+{
+    local HALS_CONF="$WORK_DIR/vendor/etc/sensors/hals.conf"
+    local HAL_BLOB
+    local HAL_PATTERN
+
+    [ -f "$HALS_CONF" ] || return 0
+
+    for HAL_BLOB in sensors.bio.so; do
+        [ ! -f "$WORK_DIR/vendor/lib64/$HAL_BLOB" ] || continue
+        HAL_PATTERN="${HAL_BLOB//./\\.}"
+
+        if grep -q "$HAL_BLOB" "$HALS_CONF"; then
+            LOG "- Removing absent $HAL_BLOB from vendor sensors hals.conf"
+            sed -i "/$HAL_PATTERN/d" "$HALS_CONF"
+        fi
+    done
+}
+
 _DISABLE_SURFACEFLINGER_SHADER_CACHE()
 {
     local INIT_RC="$WORK_DIR/system/system/etc/init/hw/init.rc"
@@ -170,6 +204,7 @@ _DISABLE_UNSUPPORTED_OUI9_INIT_WRITES()
         -e "/\/dev\/cpuctl\/top-app\/cpu\.rt_runtime_us/d" \
         -e "/\/proc\/sys\/net\/core\/netdev_max_backlog/d"
     _SED_DELETE_IF_EXISTS "$WORK_DIR/vendor/etc/init/init.baseband.rc" "/\/proc\/sys\/net\/core\/netdev_max_backlog/d"
+    _SED_DELETE_IF_EXISTS "$WORK_DIR/vendor/etc/init/init.nfc.samsung.rc" "/\/sys\/class\/nfc_sec\/pvdd/d"
 }
 
 _PATCH_CONST_BEFORE_BOOL_IPUT()
@@ -459,6 +494,8 @@ _DISABLE_UNSUPPORTED_BT_OFFLOAD
 _DISABLE_UNSUPPORTED_OUI9_INIT_WRITES
 _PATCH_BLUETOOTH_APEX_OFFLOAD
 _DISABLE_STALE_KEYMASTER_WAIT
+_PATCH_SENSORHUB_SYSFS_LOG_NOISE
+_DROP_MISSING_SENSOR_HAL_BLOBS
 LOG_STEP_OUT
 
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/etc/selinux/mapping/29.0.cil" 0 0 644 "u:object_r:system_file:s0"
@@ -468,6 +505,8 @@ ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/etc/selinux/mapping/30.0.com
 
 ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "etc/ueventd.rc" 0 0 644 "u:object_r:vendor_configs_file:s0"
 ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "ueventd.rc" 0 0 644 "u:object_r:vendor_configs_file:s0"
+ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "etc/init/android.hardware.sensors@2.0-service-multihal.rc" 0 0 644 "u:object_r:vendor_configs_file:s0"
+ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "bin/monsterrom_wait_sensors_ready.sh" 0 2000 755 "u:object_r:vendor_file:s0"
 
-unset -f GET_SYSTEM_EXT _SED_DELETE_IF_EXISTS _FOR_EACH_EXYNOS_INIT _DISABLE_PERFETTO_TRACED _FIX_STRONGBOX_KEYMASTER_RC _DISABLE_STALE_KEYMASTER_WAIT _DISABLE_SURFACEFLINGER_SHADER_CACHE _DISABLE_UNSUPPORTED_MAINLINE_FEATURES _DISABLE_UNSUPPORTED_BT_OFFLOAD _DISABLE_UNSUPPORTED_OUI9_INIT_WRITES _PATCH_CONST_BEFORE_BOOL_IPUT _PATCH_BOOL_METHOD_RETURN _PATCH_BLUETOOTH_APEX_OFFLOAD
+unset -f GET_SYSTEM_EXT _SED_DELETE_IF_EXISTS _FOR_EACH_EXYNOS_INIT _DISABLE_PERFETTO_TRACED _FIX_STRONGBOX_KEYMASTER_RC _DISABLE_STALE_KEYMASTER_WAIT _PATCH_SENSORHUB_SYSFS_LOG_NOISE _DROP_MISSING_SENSOR_HAL_BLOBS _DISABLE_SURFACEFLINGER_SHADER_CACHE _DISABLE_UNSUPPORTED_MAINLINE_FEATURES _DISABLE_UNSUPPORTED_BT_OFFLOAD _DISABLE_UNSUPPORTED_OUI9_INIT_WRITES _PATCH_CONST_BEFORE_BOOL_IPUT _PATCH_BOOL_METHOD_RETURN _PATCH_BLUETOOTH_APEX_OFFLOAD
 LOG_STEP_OUT

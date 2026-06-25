@@ -1,4 +1,8 @@
  0 2000 755 capabilities=0x0
 vendor/ueventd.rc 0 0 644 capabilities=0x0
+vendor/bin 0 2000 755 capabilities=0x0
+vendor/bin/monsterrom_wait_sensors_ready.sh 0 2000 755 capabilities=0x0
 vendor/etc 0 2000 755 capabilities=0x0
+vendor/etc/init 0 0 755 capabilities=0x0
+vendor/etc/init/android.hardware.sensors@2.0-service-multihal.rc 0 0 644 capabilities=0x0
 vendor/etc/ueventd.rc 0 0 644 capabilities=0x0

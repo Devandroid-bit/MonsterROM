@@ -1,4 +1,8 @@
 /vendor u:object_r:vendor_file:s0
 /vendor/ueventd\.rc u:object_r:vendor_configs_file:s0
+/vendor/bin u:object_r:vendor_file:s0
+/vendor/bin/monsterrom_wait_sensors_ready\.sh u:object_r:vendor_file:s0
 /vendor/etc u:object_r:vendor_configs_file:s0
+/vendor/etc/init u:object_r:vendor_configs_file:s0
+/vendor/etc/init/android\.hardware\.sensors@2\.0-service-multihal\.rc u:object_r:vendor_configs_file:s0
 /vendor/etc/ueventd\.rc u:object_r:vendor_configs_file:s0

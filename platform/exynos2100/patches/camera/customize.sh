@@ -1,3 +1,54 @@
+ADD_PUBLIC_CAMERA_LIB()
+{
+    local LIB="$1"
+    local LIST="$WORK_DIR/system/system/etc/public.libraries-camera.samsung.txt"
+
+    [ -f "$LIST" ] || return 0
+    if [ ! -f "$WORK_DIR/system/system/lib64/$LIB" ] && \
+            [ ! -f "$WORK_DIR/system/system/lib/$LIB" ] && \
+            [ ! -f "$WORK_DIR/vendor/lib64/$LIB" ] && \
+            [ ! -f "$WORK_DIR/vendor/lib/$LIB" ]; then
+        return 0
+    fi
+
+    if ! grep -qxF "$LIB" "$LIST"; then
+        LOG "- Adding $LIB to public camera libraries"
+        EVAL "printf '%s\n' \"$LIB\" >> \"$LIST\""
+    fi
+}
+
+ADD_VENDOR_PUBLIC_LIB()
+{
+    local LIB="$1"
+    local LIST="$WORK_DIR/vendor/etc/public.libraries.txt"
+
+    [ -f "$LIST" ] || return 0
+    if [ ! -f "$WORK_DIR/vendor/lib64/$LIB" ] && \
+            [ ! -f "$WORK_DIR/vendor/lib/$LIB" ]; then
+        return 0
+    fi
+
+    if ! grep -qxF "$LIB" "$LIST"; then
+        LOG "- Adding $LIB to vendor public libraries"
+        EVAL "printf '%s\n' \"$LIB\" >> \"$LIST\""
+    fi
+}
+
+if [ ! -f "$WORK_DIR/vendor/lib64/libcdsprpc.so" ] && \
+        [ -f "$MODPATH/vendor/lib64/libcdsprpc.so" ]; then
+    LOG "- Adding Exynos-safe libcdsprpc camera fallback"
+    EVAL "cp -a \"$MODPATH/vendor/lib64/libcdsprpc.so\" \"$WORK_DIR/vendor/lib64/libcdsprpc.so\""
+    SET_METADATA "vendor" "lib64/libcdsprpc.so" 0 0 644 "u:object_r:vendor_file:s0"
+fi
+
+if grep -q "super_night.mpi.v2" "$WORK_DIR/system/system/etc/floating_feature.xml" \
+        "$WORK_DIR/vendor/etc/floating_feature.xml" 2> /dev/null; then
+    ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" \
+        "vendor" "lib64/libAIQSolution_MPI.camera.samsung.so" 0 0 644 "u:object_r:vendor_file:s0"
+    ADD_PUBLIC_CAMERA_LIB "libAIQSolution_MPI.camera.samsung.so"
+    ADD_VENDOR_PUBLIC_LIB "libAIQSolution_MPI.camera.samsung.so"
+fi
+
 # Add ImageTagger lib
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libImageTagger.camera.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
 
@@ -18,11 +69,13 @@ ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/etc/public.libraries-arcsoft
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libFace_Landmark_Engine.camera.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libFacialStickerEngine.arcsoft.so" 0 0 644 "u:object_r:system_lib_file:s0"
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libFood.camera.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
-EVAL "echo \"libFood.camera.samsung.so\" >> \"$WORK_DIR/system/system/etc/public.libraries-camera.samsung.txt\""
+ADD_PUBLIC_CAMERA_LIB "libFood.camera.samsung.so"
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libFoodDetector.camera.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
-EVAL "echo \"libFoodDetector.camera.samsung.so\" >> \"$WORK_DIR/system/system/etc/public.libraries-camera.samsung.txt\""
+ADD_PUBLIC_CAMERA_LIB "libFoodDetector.camera.samsung.so"
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libHpr_RecFace_dl_v1.0.camera.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libLocalTM_pcc.camera.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
+ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libFaceRestoration.camera.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
+ADD_PUBLIC_CAMERA_LIB "libFaceRestoration.camera.samsung.so"
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libfacialrestoration.arcsoft.so" 0 0 644 "u:object_r:system_lib_file:s0"
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libhumantracking.arcsoft.so" 0 0 644 "u:object_r:system_lib_file:s0"
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libhumantracking_util.camera.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
@@ -31,10 +84,10 @@ ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libsaiv_HprFace_cmh_su
 if [[ "$TARGET_CODENAME" == "p3s" ]]; then
     ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libsame_source_hdr.arcsoft.so" 0 0 644 "u:object_r:system_lib_file:s0"
 fi
-EVAL "echo \"libsuperresolution_wrapper_v2.camera.samsung.so\" >> \"$WORK_DIR/system/system/etc/public.libraries-camera.samsung.txt\""
+ADD_PUBLIC_CAMERA_LIB "libsuperresolution_wrapper_v2.camera.samsung.so"
 if [[ "$TARGET_CODENAME" == "p3s" ]]; then
-    EVAL "echo \"libsuperresolutionraw_wrapper_v2.camera.samsung.so\" >> \"$WORK_DIR/system/system/etc/public.libraries-camera.samsung.txt\""
-    EVAL "echo \"libuwsuperresolution_wrapper_v1.camera.samsung.so\" >> \"$WORK_DIR/system/system/etc/public.libraries-camera.samsung.txt\""
+    ADD_PUBLIC_CAMERA_LIB "libsuperresolutionraw_wrapper_v2.camera.samsung.so"
+    ADD_PUBLIC_CAMERA_LIB "libuwsuperresolution_wrapper_v1.camera.samsung.so"
 fi
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libveengine.arcsoft.so" 0 0 644 "u:object_r:system_lib_file:s0"
 
@@ -102,6 +155,20 @@ fi
 for blob in $BLOBS_LIST
 do
     ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "$blob" 0 0 644 "u:object_r:system_lib_file:s0" &
+done
+wait $(jobs -p) || exit 1
+
+for lib in \
+    libImageTagger.camera.samsung.so \
+    libImageSegmenter_v1.camera.samsung.so \
+    libLocalTM_pcc.camera.samsung.so \
+    libMultiFrameProcessing30.camera.samsung.so \
+    libObjectDetector_v1.camera.samsung.so \
+    libSceneDetector_v1.camera.samsung.so \
+    libSwIsp_wrapper_v1.camera.samsung.so \
+    libVideoClassifier.camera.samsung.so
+do
+    ADD_PUBLIC_CAMERA_LIB "$lib"
 done
 
 LOG_STEP_IN "- Fixing vendor display props"

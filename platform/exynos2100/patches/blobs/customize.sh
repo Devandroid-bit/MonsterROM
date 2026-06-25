@@ -30,7 +30,12 @@ ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/lib_SoundAlive_play_pl
 DELETE_FROM_WORK_DIR "system" "system/lib64/lib_SoundAlive_play_plus_ver900.so"
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libaudiosaplus_sec_legacy.so" 0 0 644 "u:object_r:system_lib_file:s0"
 ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/lib64/libsamsungSoundbooster_plus_legacy.so" 0 0 644 "u:object_r:system_lib_file:s0"
-_ADD_TARGET_BLOB_IF_EXISTS "system" "system/lib64/libpenguin.so" 0 0 644 "u:object_r:system_lib_file:s0"
+if [ -f "$FW_DIR/$_TARGET_FIRMWARE_PATH/system/system/lib64/libpenguin.so" ]; then
+    _ADD_TARGET_BLOB_IF_EXISTS "system" "system/lib64/libpenguin.so" 0 0 644 "u:object_r:system_lib_file:s0"
+else
+    LOG "- Adding generated libpenguin.so shim because the target firmware does not ship it"
+    ADD_TO_WORK_DIR "platform/exynos2100/patches/blobs" "system" "system/lib64/libpenguin.so" 0 0 644 "u:object_r:system_lib_file:s0"
+fi
 LOG_STEP_OUT
 
 if grep -q 'stream type="sec_voice_communication"' "$WORK_DIR/vendor/etc/audio_effects_sec.xml" 2>/dev/null; then

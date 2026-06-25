@@ -1,0 +1,56 @@
+From 8cf39d2a2cf9ef1b621a3ff5f4c01e4e6db5f110 Mon Sep 17 00:00:00 2001
+From: ditternation <ditternation@localhost>
+Date: Thu, 25 Jun 2026 02:44:00 +0200
+Subject: [PATCH] Skip missing battery after manufactured sysfs writes
+
+The One UI 9 BatteryService mirrors the EFS first-use week value into
+/sys/class/power_supply/battery/batt_after_manufactured. Exynos2100 kernels
+used by MonsterROM do not expose that sysfs node, so system_server logs an
+EACCES/FileNotFound exception during boot.
+
+Keep the EFS write and only sync to sysfs when the kernel actually exposes
+the node.
+---
+ smali/com/android/server/BatteryService.smali | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/smali/com/android/server/BatteryService.smali b/smali/com/android/server/BatteryService.smali
+index 2c09dfb1f..6d2b183a2 100644
+--- a/smali/com/android/server/BatteryService.smali
++++ b/smali/com/android/server/BatteryService.smali
+@@ -5670,8 +5670,16 @@
+ 
+     invoke-static {v0, v1, v2}, Lcom/android/server/battery/BattUtils;->writeNode(JLjava/lang/String;)Z
+ 
++    invoke-static {v4}, Lcom/android/server/BatteryService;->isFileSupported(Ljava/lang/String;)Z
++
++    move-result v5
++
++    if-eqz v5, :monsterrom_skip_batt_after_manufactured_zero_sys
++
+     invoke-static {v0, v1, v4}, Lcom/android/server/battery/BattUtils;->writeNode(JLjava/lang/String;)Z
+ 
++    :monsterrom_skip_batt_after_manufactured_zero_sys
++
+     const/4 v0, 0x0
+ 
+     iput v0, p0, Lcom/android/server/BatteryService;->mSavedDiffWeek:I
+@@ -5710,8 +5718,16 @@
+ 
+     int-to-long v5, v1
+ 
++    invoke-static {v4}, Lcom/android/server/BatteryService;->isFileSupported(Ljava/lang/String;)Z
++
++    move-result v7
++
++    if-eqz v7, :monsterrom_skip_batt_after_manufactured_sync_sys
++
+     invoke-static {v5, v6, v4}, Lcom/android/server/battery/BattUtils;->writeNode(JLjava/lang/String;)Z
+ 
++    :monsterrom_skip_batt_after_manufactured_sync_sys
++
+     invoke-static {v2}, Ljava/lang/Integer;->parseInt(Ljava/lang/String;)I
+ 
+     move-result v1
+-- 
+2.52.0

@@ -145,6 +145,11 @@ APPEND_CAMERA_VENDOR_LIB_INFO()
 
     echo "$VALUE"
 }
+
+APPEND_CAMERA_SDK_FEATURE_INFO()
+{
+    APPEND_CAMERA_VENDOR_LIB_INFO "$1" "$2"
+}
 # ]
 
 SOURCE_FIRMWARE_PATH="$(cut -d "/" -f 1 -s <<< "$SOURCE_FIRMWARE")_$(cut -d "/" -f 2 -s <<< "$SOURCE_FIRMWARE")"
@@ -415,6 +420,38 @@ if [[ "$VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO" != "$VENDOR_CAMERA_CONFIG_VENDOR_L
         "$WORK_DIR/vendor/etc/floating_feature.xml" \
         "SEC_FLOATING_FEATURE_CAMERA_CONFIG_VENDOR_LIB_INFO" \
         "$VENDOR_CAMERA_CONFIG_VENDOR_LIB_INFO"
+fi
+
+SOURCE_CAMERA_CONFIG_SDK_FEATURE_INFO="$(GET_FLOATING_FEATURE_CONFIG "$FW_DIR/$SOURCE_FIRMWARE_PATH/system/system/etc/floating_feature.xml" "SEC_FLOATING_FEATURE_CAMERA_CONFIG_SDK_FEATURE_INFO")"
+TARGET_CAMERA_CONFIG_SDK_FEATURE_INFO="$(GET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_CAMERA_CONFIG_SDK_FEATURE_INFO")"
+TARGET_CAMERA_CONFIG_SDK_FEATURE_INFO_NEW="$TARGET_CAMERA_CONFIG_SDK_FEATURE_INFO"
+if [[ "$SOURCE_CAMERA_CONFIG_SDK_FEATURE_INFO" == *"exposure_table_control"* ]]; then
+    TARGET_CAMERA_CONFIG_SDK_FEATURE_INFO_NEW="$(APPEND_CAMERA_SDK_FEATURE_INFO \
+        "$TARGET_CAMERA_CONFIG_SDK_FEATURE_INFO_NEW" "exposure_table_control")"
+fi
+if [[ "$SOURCE_CAMERA_CONFIG_SDK_FEATURE_INFO" == *"selfie_tone"* ]] && \
+        grep -q "SUPPORT_SELFIE_TONE_MODE.*true" "$WORK_DIR/system/system/cameradata/camera-feature.xml" 2> /dev/null; then
+    TARGET_CAMERA_CONFIG_SDK_FEATURE_INFO_NEW="$(APPEND_CAMERA_SDK_FEATURE_INFO \
+        "$TARGET_CAMERA_CONFIG_SDK_FEATURE_INFO_NEW" "selfie_tone")"
+fi
+if [[ "$SOURCE_CAMERA_CONFIG_SDK_FEATURE_INFO" == *"physical_camera_tele:camera_id=52"* ]] && \
+        grep -q "BACK_TELE_CAMERA_ID.*52" "$WORK_DIR/system/system/cameradata/camera-feature.xml" 2> /dev/null; then
+    TARGET_CAMERA_CONFIG_SDK_FEATURE_INFO_NEW="$(APPEND_CAMERA_SDK_FEATURE_INFO \
+        "$TARGET_CAMERA_CONFIG_SDK_FEATURE_INFO_NEW" "physical_camera_tele:camera_id=52")"
+fi
+if [[ "$TARGET_CAMERA_CONFIG_SDK_FEATURE_INFO_NEW" != "$TARGET_CAMERA_CONFIG_SDK_FEATURE_INFO" ]]; then
+    SET_FLOATING_FEATURE_CONFIG \
+        "SEC_FLOATING_FEATURE_CAMERA_CONFIG_SDK_FEATURE_INFO" \
+        "$TARGET_CAMERA_CONFIG_SDK_FEATURE_INFO_NEW"
+fi
+
+if [ "$(GET_PROP "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/build.prop" "ro.camera.disableHeicUltraHDR")" ]; then
+    SET_PROP "vendor" "ro.camera.disableHeicUltraHDR" \
+        "$(GET_PROP "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/build.prop" "ro.camera.disableHeicUltraHDR")"
+fi
+if [ "$(GET_PROP "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/build.prop" "ro.camera.enableCamera1MaxZsl")" ]; then
+    SET_PROP "vendor" "ro.camera.enableCamera1MaxZsl" \
+        "$(GET_PROP "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/build.prop" "ro.camera.enableCamera1MaxZsl")"
 fi
 if [[ "$SOURCE_CAMERA_CONFIG_VENDOR_LIB_INFO" == *"aebhdr.arcsoft.v1"* ]] && \
         [[ "$TARGET_CAMERA_CONFIG_VENDOR_LIB_INFO" != *"aebhdr.arcsoft.v1"* ]]; then
