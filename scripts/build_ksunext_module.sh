@@ -1959,6 +1959,17 @@ fix_aircommand_compile_cache()
     log_msg "aircommand compile cache reset for patched APK"
 }
 
+enable_notes_role_overlay()
+{
+    local USER_ID
+
+    cmd overlay list 2>/dev/null | grep -q "com.android.role.notes.enabled" || return 0
+
+    for USER_ID in $(cmd user list 2>/dev/null | sed -n "s/.*UserInfo{\([0-9][0-9]*\):.*/\1/p"); do
+        cmd overlay enable --user "$USER_ID" com.android.role.notes.enabled >/dev/null 2>&1 || true
+    done
+}
+
 start_aircommand_request_daemon()
 {
     (
@@ -2051,6 +2062,7 @@ fix_smartsuggestions_history
 fix_beaconmanager_ble_permissions
 fix_sensor_permissions
 mount_hidden_hole_sensor_overlay
+enable_notes_role_overlay
 fix_launcher_compile_cache
 fix_aircommand_compile_cache
 log_msg "runtime repairs applied"
