@@ -53,7 +53,7 @@ BACKPORT_SF_PROPS()
         fi
 
         PROP="debug.sf.show_refresh_rate_overlay_render_rate"
-        VALUE="true"
+        VALUE="false"
         if [ ! "$(GET_PROP "vendor" "$PROP")" ]; then
             LOG "- Adding \"$PROP\" prop with \"$VALUE\" in ${FILE//$WORK_DIR/}"
             EVAL "sed -i \"/ro.surface_flinger.use_content_detection_for_refresh_rate/i $PROP=$VALUE\" \"$FILE\""

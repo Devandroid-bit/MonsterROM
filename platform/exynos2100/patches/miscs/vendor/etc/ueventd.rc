@@ -30,6 +30,12 @@ firmware_directories /spu/ /vendor/firmware/wifi/
 /dev/sys/fs/by-name/userdata seq_file_ra_mul 0664 root system
 /sys/class/power_supply/battery batt_update_data 0664 system system
 /sys/class/sensors/grip_sensor grip_request_firmware 0664 system system
+# One UI 9 motion services probe these grip/grip_notifier attrs directly.
+/sys/class/sensors/grip_sensor onoff 0664 system radio
+/sys/class/sensors/grip_sensor motion 0664 system radio
+/sys/class/sensors/grip_sensor unknown_state 0664 system radio
+/sys/devices/virtual/sensor_event/symlink/grip_sensor enable 0664 system radio
+/sys/devices/virtual/sensor_event/symlink/grip_notifier enable2 0664 system radio
 /sys/bbd lk_enable 0664 gps system
 /proc reset_klog 0440 system system
 /dev/mali0                0666   system     system

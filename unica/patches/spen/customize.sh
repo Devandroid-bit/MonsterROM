@@ -1,62 +1,32 @@
-SOURCE_FIRMWARE_PATH="$(cut -d "/" -f 1 -s <<< "$SOURCE_FIRMWARE")_$(cut -d "/" -f 2 -s <<< "$SOURCE_FIRMWARE")"
-TARGET_FIRMWARE_PATH="$(cut -d "/" -f 1 -s <<< "$TARGET_FIRMWARE")_$(cut -d "/" -f 2 -s <<< "$TARGET_FIRMWARE")"
+AIRCOMMAND_APK="system/priv-app/AirCommand/AirCommand.apk"
 
-SOURCE_HAS_SPEN="$(test -n "$(find "$FW_DIR/$SOURCE_FIRMWARE_PATH/system/system/etc/permissions" -type f -name "com.sec.feature.spen_usp*.xml")" && echo "true" || echo "false")"
-TARGET_HAS_SPEN="$(test -n "$(find "$FW_DIR/$TARGET_FIRMWARE_PATH/system/system/etc/permissions" -type f -name "com.sec.feature.spen_usp*.xml")" && echo "true" || echo "false")"
+if [ -f "$WORK_DIR/system/$AIRCOMMAND_APK" ]; then
+    LOG_STEP_IN "- Applying AirCommand S Pen logic patch"
 
-if [[ "$TARGET_CODENAME" == "p3s" ]]; then
-    TARGET_HAS_SPEN=true
-fi
+    SMALI_PATCH "system" "$AIRCOMMAND_APK" \
+        "smali/b5/q.smali" \
+        "return" \
+        "a(Landroid/content/pm/PackageManager;)I" \
+        "70"
 
-if ! $SOURCE_HAS_SPEN; then
-    if $TARGET_HAS_SPEN; then
-        ADD_TO_WORK_DIR "b0qxxx" "system" "system/app/AirGlance/AirGlance.apk" 0 0 644 "u:object_r:system_file:s0"
-        ADD_TO_WORK_DIR "b0qxxx" "system" "system/app/LiveDrawing/LiveDrawing.apk" 0 0 644 "u:object_r:system_file:s0"
-        ADD_TO_WORK_DIR "b0qxxx" "system" "system/etc/default-permissions/default-permissions-com.samsung.android.service.aircommand.xml" 0 0 644 "u:object_r:system_file:s0"
-        ADD_TO_WORK_DIR "b0qxxx" "system" "system/etc/permissions/privapp-permissions-com.samsung.android.app.readingglass.xml" 0 0 644 "u:object_r:system_file:s0"
-        ADD_TO_WORK_DIR "b0qxxx" "system" "system/etc/permissions/privapp-permissions-com.samsung.android.service.aircommand.xml" 0 0 644 "u:object_r:system_file:s0"
-        ADD_TO_WORK_DIR "b0qxxx" "system" "system/etc/permissions/privapp-permissions-com.samsung.android.service.airviewdictionary.xml" 0 0 644 "u:object_r:system_file:s0"
-        ADD_TO_WORK_DIR "b0qxxx" "system" "system/etc/sysconfig/airviewdictionaryservice.xml" 0 0 644 "u:object_r:system_file:s0"
-        ADD_TO_WORK_DIR "b0qxxx" "system" "system/etc/public.libraries-smps.samsung.txt" 0 0 644 "u:object_r:system_file:s0"
-        ADD_TO_WORK_DIR "$([[ "$TARGET_OS_SINGLE_SYSTEM_IMAGE" == "qssi" ]] && echo "b0qxxx" || echo "b0sxxx")" \
-            "system" "system/lib/libandroid_runtime.so" 0 0 644 "u:object_r:system_lib_file:s0"
-        ADD_TO_WORK_DIR "$([[ "$TARGET_OS_SINGLE_SYSTEM_IMAGE" == "qssi" ]] && echo "b0qxxx" || echo "b0sxxx")" \
-            "system" "system/lib/libsmpsft.smps.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
-        ADD_TO_WORK_DIR "$([[ "$TARGET_OS_SINGLE_SYSTEM_IMAGE" == "qssi" ]] && echo "b0qxxx" || echo "b0sxxx")" \
-            "system" "system/lib64/libandroid_runtime.so" 0 0 644 "u:object_r:system_lib_file:s0"
-        ADD_TO_WORK_DIR "$([[ "$TARGET_OS_SINGLE_SYSTEM_IMAGE" == "qssi" ]] && echo "b0qxxx" || echo "b0sxxx")" \
-            "system" "system/lib64/libsmpsft.smps.samsung.so" 0 0 644 "u:object_r:system_lib_file:s0"
-        ADD_TO_WORK_DIR "b0qxxx" "system" "system/media/audio/pensounds" 0 0 755 "u:object_r:system_file:s0"
-        ADD_TO_WORK_DIR "b0qxxx" "system" "system/priv-app/AirCommand/AirCommand.apk" 0 0 644 "u:object_r:system_file:s0"
-        ADD_TO_WORK_DIR "b0qxxx" "system" "system/priv-app/AirReadingGlass/AirReadingGlass.apk" 0 0 644 "u:object_r:system_file:s0"
-        ADD_TO_WORK_DIR "b0qxxx" "system" "system/priv-app/SmartEye/SmartEye.apk" 0 0 644 "u:object_r:system_file:s0"
-    else
-        LOG "\033[0;33m! Nothing to do\033[0m"
-    fi
+    SMALI_PATCH "system" "$AIRCOMMAND_APK" \
+        "smali/b5/b.smali" \
+        "return" \
+        "c()I" \
+        "70"
+
+    APPLY_PATCH "system" "$AIRCOMMAND_APK" \
+        "$SRC_DIR/unica/patches/spen/AirCommand.apk/0001-Add-AirCommand-shortcut-detach-simulator.patch"
+
+    LOG_STEP_OUT
 else
-    if ! $TARGET_HAS_SPEN; then
-        LOG_STEP_IN "- Removing S Pen blobs"
-        DELETE_FROM_WORK_DIR "system" "system/app/AirGlance"
-        DELETE_FROM_WORK_DIR "system" "system/app/LiveDrawing"
-        DELETE_FROM_WORK_DIR "system" "system/etc/default-permissions/default-permissions-com.samsung.android.service.aircommand.xml"
-        DELETE_FROM_WORK_DIR "system" "system/etc/permissions/privapp-permissions-com.samsung.android.app.readingglass.xml"
-        DELETE_FROM_WORK_DIR "system" "system/etc/permissions/privapp-permissions-com.samsung.android.service.aircommand.xml"
-        DELETE_FROM_WORK_DIR "system" "system/etc/permissions/privapp-permissions-com.samsung.android.service.airviewdictionary.xml"
-        DELETE_FROM_WORK_DIR "system" "system/etc/sysconfig/airviewdictionaryservice.xml"
-        DELETE_FROM_WORK_DIR "system" "system/etc/public.libraries-smps.samsung.txt"
-        DELETE_FROM_WORK_DIR "system" "system/lib/libsmpsft.smps.samsung.so"
-        DELETE_FROM_WORK_DIR "system" "system/lib64/libsmpsft.smps.samsung.so"
-        DELETE_FROM_WORK_DIR "system" "system/media/audio/pensounds"
-        DELETE_FROM_WORK_DIR "system" "system/priv-app/AirCommand"
-        DELETE_FROM_WORK_DIR "system" "system/priv-app/AirReadingGlass"
-        DELETE_FROM_WORK_DIR "system" "system/priv-app/SmartEye"
-        if [ -d "$WORK_DIR/system/system/etc/permissions" ]; then
-            while IFS= read -r f; do
-                DELETE_FROM_WORK_DIR "system" "${f#$WORK_DIR/system/}"
-            done < <(find "$WORK_DIR/system/system/etc/permissions" -maxdepth 1 -type f -name "com.sec.feature.spen_usp*.xml")
-        fi
-        LOG_STEP_OUT
-    fi
+    LOGW "AirCommand.apk is not present in work_dir. Skipping AirCommand logic patch"
 fi
 
-unset SOURCE_FIRMWARE_PATH TARGET_FIRMWARE_PATH SOURCE_HAS_SPEN TARGET_HAS_SPEN
+LOG_STEP_IN "- Applying S Pen floating feature config"
+SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_FRAMEWORK_CONFIG_SPEN_GARAGE_SPEC" "type=insert, bundled=true"
+SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_FRAMEWORK_CONFIG_SPEN_VERSION" "70"
+SET_FLOATING_FEATURE_CONFIG "SEC_FLOATING_FEATURE_SETTINGS_SUPPORT_S_PEN_HOVERING_N_DETACHMENT" "TRUE"
+LOG_STEP_OUT
+
+unset AIRCOMMAND_APK

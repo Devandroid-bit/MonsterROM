@@ -122,7 +122,6 @@ system/app/PlayAutoInstallConfig
 # HwModuleTest
 SYSTEM_DEBLOAT+="
 system/app/Cameralyzer
-system/app/FactoryAirCommandManager
 system/app/FactoryCameraFB
 system/app/HMT
 system/app/WlanTest

@@ -10,6 +10,10 @@ MATCH_TARGET_FEATURES()
     TARGET_FEATURES="$(sort <<< "$TARGET_FEATURES")"
 
     for f in $SOURCE_FEATURES; do
+        if [[ "$f" == com.sec.feature.spen_usp*.xml ]]; then
+            continue
+        fi
+
         if ! grep -q "$f" <<< "$TARGET_FEATURES"; then
             DELETE_FROM_WORK_DIR "system" "system/etc/permissions/$f"
         fi

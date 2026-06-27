@@ -25,32 +25,6 @@ SMALI_PATCH "system" "$LAUNCHER_APK" "$INPUT_CONSUMER_SMALI" "replace" \
     > /dev/null || true
 
 LOG "- Fixing launcher screen-state receiver verifier issue"
-SMALI_PATCH "system" "$LAUNCHER_APK" "$SCREEN_STATE_OBSERVER_SMALI" "replace" \
-    'registerScreenStateBr()V' \
-    '.locals 7' \
-    '.locals 8' \
-    > /dev/null || true
-SMALI_PATCH "system" "$LAUNCHER_APK" "$SCREEN_STATE_OBSERVER_SMALI" "replace" \
-    'registerScreenStateBr()V' \
-    'iget-object p0, p0, Lcom/samsung/app/honeyspace/edge/edgepanel/data/repository/visibility/ScreenStateObserver;->context:Landroid/content/Context;' \
-    'iget-object v7, p0, Lcom/samsung/app/honeyspace/edge/edgepanel/data/repository/visibility/ScreenStateObserver;->context:Landroid/content/Context;' \
-    > /dev/null || true
-SMALI_PATCH "system" "$LAUNCHER_APK" "$SCREEN_STATE_OBSERVER_SMALI" "replace" \
-    'registerScreenStateBr()V' \
-    'invoke-direct {p0, p0, v4}, Lcom/samsung/app/honeyspace/edge/edgepanel/data/repository/visibility/ScreenStateObserver;->getPendingIntent(Landroid/content/Context;Ljava/lang/String;)Landroid/app/PendingIntent;' \
-    'invoke-direct {p0, v7, v4}, Lcom/samsung/app/honeyspace/edge/edgepanel/data/repository/visibility/ScreenStateObserver;->getPendingIntent(Landroid/content/Context;Ljava/lang/String;)Landroid/app/PendingIntent;' \
-    > /dev/null || true
-SMALI_PATCH "system" "$LAUNCHER_APK" "$SCREEN_STATE_OBSERVER_SMALI" "replace" \
-    'registerScreenStateBr()V' \
-    'const/4 p0, 0x0' \
-    'const/4 v7, 0x0' \
-    > /dev/null || true
-SMALI_PATCH "system" "$LAUNCHER_APK" "$SCREEN_STATE_OBSERVER_SMALI" "replace" \
-    'registerScreenStateBr()V' \
-    'invoke-virtual {v5, v6, v4, v2, p0}, Lcom/samsung/android/sepunion/SemEventDelegationManager;->registerPendingIntent(Landroid/content/IntentFilter;Landroid/app/PendingIntent;ILjava/util/List;)V' \
-    'invoke-virtual {v5, v6, v4, v2, v7}, Lcom/samsung/android/sepunion/SemEventDelegationManager;->registerPendingIntent(Landroid/content/IntentFilter;Landroid/app/PendingIntent;ILjava/util/List;)V' \
-    > /dev/null || true
-
 awk '
     /^\.method/ && index($0, "registerScreenStateBr()V") {
         print

@@ -168,13 +168,29 @@ _DISABLE_UNSUPPORTED_MAINLINE_FEATURES()
 
 _DISABLE_UNSUPPORTED_BT_OFFLOAD()
 {
-    LOG "- Disabling Bluetooth audio offload unsupported by Exynos2100 vendor"
+    LOG "- Disabling Bluetooth audio offload paths unsupported by Exynos2100 vendor"
     SET_PROP "product" "persist.bluetooth.a2dp_offload.disabled" "true"
     SET_PROP "product" "persist.bluetooth.leaudio_offload.disabled" "true"
     SET_PROP "product" "persist.vendor.bt.a2dp_offload.disabled" "true"
     SET_PROP "product" "persist.vendor.bluetooth.a2dp_offload.disabled" "true"
     SET_PROP "product" "ro.bluetooth.leaudio_offload.supported" "false"
     SET_PROP "product" "persist.bluetooth.samsung.a2dp_offload.cap" --delete
+    SET_PROP "product" "persist.bluetooth.samsung.a2dp.cap" "SBC,AAC"
+    SET_PROP "product" "persist.bluetooth.samsung.leaudio.livecast" "false"
+    SET_PROP "product" "media.stagefright.enable-fma2dp" "false"
+    SET_PROP "product" "ro.bluetooth.library_name" --delete
+    SET_PROP "product" "bluetooth.a2dp.source.sbc_priority.config" "1001"
+    SET_PROP "product" "bluetooth.a2dp.source.aac_priority.config" "900000"
+    SET_PROP "product" "bluetooth.a2dp.source.aptx_priority.config" "-1"
+    SET_PROP "product" "bluetooth.a2dp.source.aptx_hd_priority.config" "-1"
+    SET_PROP "product" "bluetooth.a2dp.source.ldac_priority.config" "-1"
+    SET_PROP "product" "bluetooth.a2dp.source.opus_priority.config" "-1"
+    SET_PROP "product" "bluetooth.a2dp.source.lhdcv5_priority.config" "-1"
+    SET_PROP "product" "audio.offload.disable" "1"
+    SET_PROP "product" "audio.offload.video" "false"
+    SET_PROP "product" "audio.deep_buffer.media" "false"
+    SET_PROP "product" "tunnel.audio.encode" "false"
+    SET_PROP "product" "media.stagefright.audio.deep" "false"
 }
 
 _DISABLE_UNSUPPORTED_OUI9_INIT_WRITES()
@@ -205,6 +221,194 @@ _DISABLE_UNSUPPORTED_OUI9_INIT_WRITES()
         -e "/\/proc\/sys\/net\/core\/netdev_max_backlog/d"
     _SED_DELETE_IF_EXISTS "$WORK_DIR/vendor/etc/init/init.baseband.rc" "/\/proc\/sys\/net\/core\/netdev_max_backlog/d"
     _SED_DELETE_IF_EXISTS "$WORK_DIR/vendor/etc/init/init.nfc.samsung.rc" "/\/sys\/class\/nfc_sec\/pvdd/d"
+}
+
+_SET_LOG_TAG_LEVEL()
+{
+    local TAG="$1"
+    local LEVEL="$2"
+
+    SET_PROP "product" "log.tag.$TAG" "$LEVEL"
+    SET_PROP "product" "persist.log.tag.$TAG" "$LEVEL"
+}
+
+_QUIET_VISIBLE_LOGFOX_NOISE()
+{
+    LOG "- Quieting non-fatal One UI 9 debug log spam"
+
+    SET_PROP "system" "ro.logd.kernel" "false"
+    SET_PROP "product" "debug.sf.show_refresh_rate_overlay_render_rate" "false"
+    SET_PROP "product" "persist.debug.wfd.enable" "0"
+    SET_PROP "product" "nfc.nxp_log_level_global" "0"
+    SET_PROP "product" "persist.vendor.nfc.log.index" "0"
+    SET_PROP "product" "persist.log.level" "0xFFFFFFFF"
+    SET_PROP "product" "persist.log.semlevel" "0xFFFFFF00"
+    SET_PROP "product" "log.tag" "E"
+    SET_PROP "product" "persist.log.tag" "E"
+
+    _SET_LOG_TAG_LEVEL "SurfaceFlinger" "F"
+    _SET_LOG_TAG_LEVEL "WifiDisplayAdapter" "W"
+    _SET_LOG_TAG_LEVEL "WifiDisplayController" "W"
+    _SET_LOG_TAG_LEVEL "DisplayManagerService" "W"
+    _SET_LOG_TAG_LEVEL "NxpGenExtn" "F"
+    _SET_LOG_TAG_LEVEL "RILJ" "F"
+    _SET_LOG_TAG_LEVEL "SEM_RILJ" "F"
+    _SET_LOG_TAG_LEVEL "RILD" "F"
+    _SET_LOG_TAG_LEVEL "RILD2" "F"
+    _SET_LOG_TAG_LEVEL "Multi-Client" "F"
+    _SET_LOG_TAG_LEVEL "Multi-Client2" "F"
+    _SET_LOG_TAG_LEVEL "BSOHChargingDataCollector" "W"
+    _SET_LOG_TAG_LEVEL "PackageConfigPersister" "E"
+    _SET_LOG_TAG_LEVEL "GlassesApi" "F"
+    _SET_LOG_TAG_LEVEL "cnka" "F"
+    _SET_LOG_TAG_LEVEL "LockPatternUtils" "E"
+    _SET_LOG_TAG_LEVEL "usb_notify" "W"
+    _SET_LOG_TAG_LEVEL "APM_AudioPolicyManager" "E"
+    _SET_LOG_TAG_LEVEL "vendor.samsung.bluetooth.audio.BTAudioProvider" "W"
+    _SET_LOG_TAG_LEVEL "BatteryService_BatteryPropertiesRegistrar" "W"
+    _SET_LOG_TAG_LEVEL "SemWifiIntelligentTrainingManager" "W"
+    _SET_LOG_TAG_LEVEL "Settings" "E"
+    _SET_LOG_TAG_LEVEL "PackageManager" "E"
+    _SET_LOG_TAG_LEVEL "Binder" "E"
+    _SET_LOG_TAG_LEVEL "SemWallpaperColorsArea" "E"
+    _SET_LOG_TAG_LEVEL "SmartFaceManager" "F"
+    _SET_LOG_TAG_LEVEL "SmartFaceService" "F"
+    _SET_LOG_TAG_LEVEL "SmartFaceServiceStarter" "F"
+    _SET_LOG_TAG_LEVEL "ExynosCameraNode" "E"
+    _SET_LOG_TAG_LEVEL "CameraDeviceClient" "E"
+    _SET_LOG_TAG_LEVEL "CAE" "E"
+    _SET_LOG_TAG_LEVEL "Sensors" "F"
+    _SET_LOG_TAG_LEVEL "SensorService" "F"
+    _SET_LOG_TAG_LEVEL "SemContext.CaeProvider" "F"
+    _SET_LOG_TAG_LEVEL "LocalDisplayAdapter" "E"
+    _SET_LOG_TAG_LEVEL "display" "F"
+    _SET_LOG_TAG_LEVEL "ShellTransitions" "F"
+    _SET_LOG_TAG_LEVEL "NativeCustomFrequencyManager" "F"
+    _SET_LOG_TAG_LEVEL "AODManagerService" "F"
+    _SET_LOG_TAG_LEVEL "libprocessgroup" "E"
+    _SET_LOG_TAG_LEVEL "DeviceStorageMonitorService" "E"
+    _SET_LOG_TAG_LEVEL "AccountTypeLoader" "E"
+    _SET_LOG_TAG_LEVEL "System" "E"
+    _SET_LOG_TAG_LEVEL "keymaster_tee" "E"
+    _SET_LOG_TAG_LEVEL "ConnectivityService" "W"
+    _SET_LOG_TAG_LEVEL "ConnectivityManager" "W"
+    _SET_LOG_TAG_LEVEL "BLASTSyncEngine" "E"
+    _SET_LOG_TAG_LEVEL "bt_btm_pm" "E"
+    _SET_LOG_TAG_LEVEL "bluetooth" "E"
+    _SET_LOG_TAG_LEVEL "ProcessStats" "E"
+    _SET_LOG_TAG_LEVEL "Netd" "E"
+    _SET_LOG_TAG_LEVEL "AlarmManager" "E"
+    _SET_LOG_TAG_LEVEL "id.app.launcher" "E"
+    _SET_LOG_TAG_LEVEL "Watchdog" "F"
+    _SET_LOG_TAG_LEVEL "DBManager" "F"
+    _SET_LOG_TAG_LEVEL "AbsSettings" "F"
+    _SET_LOG_TAG_LEVEL "WallpaperResourcesInfo" "E"
+    _SET_LOG_TAG_LEVEL "getBitmap" "F"
+    _SET_LOG_TAG_LEVEL "FuseDaemon" "F"
+    _SET_LOG_TAG_LEVEL "ActivityManager" "F"
+    _SET_LOG_TAG_LEVEL "roid.themestore" "F"
+    _SET_LOG_TAG_LEVEL "ThemeCenter_ThemeManagerService" "F"
+    _SET_LOG_TAG_LEVEL "PermissionService" "E"
+    _SET_LOG_TAG_LEVEL "AdvertisingIdSettings" "E"
+    _SET_LOG_TAG_LEVEL "AODSettingsHelper" "F"
+    _SET_LOG_TAG_LEVEL "Kumiho-Kumiho" "E"
+    _SET_LOG_TAG_LEVEL "NearbyMediums" "E"
+    _SET_LOG_TAG_LEVEL "NearbyConnections" "E"
+    _SET_LOG_TAG_LEVEL "NearbySharing" "E"
+    _SET_LOG_TAG_LEVEL "NearbyDiscovery" "E"
+    _SET_LOG_TAG_LEVEL "BtGatt.AdvertiseManager" "E"
+    _SET_LOG_TAG_LEVEL "BluetoothMetrics" "E"
+    _SET_LOG_TAG_LEVEL "rfcomm_port_utils" "E"
+    _SET_LOG_TAG_LEVEL "AppOpService" "F"
+    _SET_LOG_TAG_LEVEL "AppOps" "F"
+    _SET_LOG_TAG_LEVEL "PlayIntegrityHooks" "F"
+    _SET_LOG_TAG_LEVEL "QueryBuilder" "F"
+    _SET_LOG_TAG_LEVEL "RemoteWorkerFactory" "E"
+    _SET_LOG_TAG_LEVEL "JobInfo" "E"
+    _SET_LOG_TAG_LEVEL "MetadataRetrieverClient" "F"
+    _SET_LOG_TAG_LEVEL "CMHProvider" "F"
+    _SET_LOG_TAG_LEVEL "SatelliteController" "F"
+    _SET_LOG_TAG_LEVEL "CmcServiceHelper" "F"
+    _SET_LOG_TAG_LEVEL "ImsUri" "F"
+    _SET_LOG_TAG_LEVEL "SecImsServiceConnector" "F"
+    _SET_LOG_TAG_LEVEL "ContextImpl" "E"
+    _SET_LOG_TAG_LEVEL "NSLocationMonitor" "E"
+    _SET_LOG_TAG_LEVEL "NetworkManager_FLP" "E"
+    _SET_LOG_TAG_LEVEL "resolv" "E"
+    _SET_LOG_TAG_LEVEL "View" "E"
+    _SET_LOG_TAG_LEVEL "KeyguardSecurityViewFlipper" "E"
+    _SET_LOG_TAG_LEVEL "CCTFlatFileLogStore" "E"
+    _SET_LOG_TAG_LEVEL "SQLiteLog" "F"
+    _SET_LOG_TAG_LEVEL "SQLiteCursor" "F"
+    _SET_LOG_TAG_LEVEL "SensorsGrip" "F"
+    _SET_LOG_TAG_LEVEL "SSS@search" "F"
+    _SET_LOG_TAG_LEVEL "SemSupplicantStaIfaceHalHidlImpl" "F"
+    _SET_LOG_TAG_LEVEL "power" "F"
+    _SET_LOG_TAG_LEVEL "WM-WorkerWrapper" "F"
+    _SET_LOG_TAG_LEVEL "MediaContentSyncTask" "F"
+    _SET_LOG_TAG_LEVEL "ControllerEventHandler" "F"
+    _SET_LOG_TAG_LEVEL "FileSyncManager" "F"
+    _SET_LOG_TAG_LEVEL "WorkerUtils" "F"
+    _SET_LOG_TAG_LEVEL "UnifiedCropper" "F"
+    _SET_LOG_TAG_LEVEL "ArcSoft_C" "F"
+    _SET_LOG_TAG_LEVEL "tflite" "F"
+    _SET_LOG_TAG_LEVEL "kcgz" "F"
+    _SET_LOG_TAG_LEVEL "SemanticLocation" "E"
+    _SET_LOG_TAG_LEVEL "SLocation" "E"
+    _SET_LOG_TAG_LEVEL "RequestManager_FLP" "F"
+    _SET_LOG_TAG_LEVEL "wificond" "E"
+    _SET_LOG_TAG_LEVEL "IE_Capabilities" "E"
+    _SET_LOG_TAG_LEVEL "SemThroughputPredictor" "F"
+    _SET_LOG_TAG_LEVEL "DIAGMON_SDK" "F"
+    _SET_LOG_TAG_LEVEL "SystemServiceRegistry" "F"
+    _SET_LOG_TAG_LEVEL "PersonalSafety" "E"
+    _SET_LOG_TAG_LEVEL "TelephonyCallback" "E"
+    _SET_LOG_TAG_LEVEL "SemBatteryUsageStatsProvider" "E"
+    _SET_LOG_TAG_LEVEL "Finsky" "E"
+    _SET_LOG_TAG_LEVEL "ActivityThread" "E"
+    _SET_LOG_TAG_LEVEL "GAEEngine" "E"
+    _SET_LOG_TAG_LEVEL "SyncManager" "E"
+    _SET_LOG_TAG_LEVEL "Controller" "F"
+    _SET_LOG_TAG_LEVEL "SDMConfig" "E"
+    _SET_LOG_TAG_LEVEL "qr_barcode_decoder" "F"
+    _SET_LOG_TAG_LEVEL "GmsTaskScheduler" "F"
+
+    for TAG in \
+        "Moneta" "DataMlSdk" "NowBarCardViewModel" "SEMS" "RILClient" \
+        "GsmCdmaPhone" "GoogleApiManager" "kbit" "LockWidgetData" \
+        "LockCalendarHelper" "SafetyCenterManagerWrap" "TNP" \
+        "CalendarSyncAdapter" "RILC" "rild" "DNC-0" "DNC-1" \
+        "NetworkTypeController" "SemGsmCdmaPhone" "TelephonyAnalyticsSubId" \
+        "NowBrief.LLMPolicy" "ConfigUpdater" "AppIconSolution" \
+        "FSA2_SyncUpPhotoCursor" "simagent.HttpRequest" "engmode_client_aidl" \
+        "SLocation" "SDHMS" "BluetoothCastAdapterService" \
+        "BluetoothRemoteDevices" "BluetoothAdapterService" "CachedBluetoothDevice" \
+        "BTAudioHalDeviceProxy" "BTAudioHalStream" "BTAudioA2dpHIDL" \
+        "BTAudioClientHIDL" "A2dpService" "BluetoothActiveDeviceManager" \
+        "bt_btif_storage" "bt_btu_hcif" "bluetooth-a2dp" \
+        "BUPlugin_BudsLogManager" "DlbSpatializerEffectContext" \
+        "AS.AudioDeviceInventory" "AS.AudioService" "AS.SpatializerHelper" \
+        "BluetoothBDTestService" "BluetoothUtils" "SemWifiApSmartBleScanner" \
+        "CameraService_worker" "cameraserver" "ExynosCameraInterface" \
+        "ExynosCameraMetadataConverterVendor" "SveCamera" "LockGuard" \
+        "GameTools" "GoogleSettingsUtils" "MediaProvider" \
+        "SatelliteModemInterface" "AppSearchIcing" "BRListParser" \
+        "PdeNotificationListenerService" "MemoryLeakHandler" "mAFPC_ABC" \
+        "NotificationService" "LpaConnector" "CustomCpuInfoReader" \
+        "DigitalHorizontalClockView_LOCK_SCREEN_2@218" \
+        "DigitalHorizontalClockView_LOCK_SCREEN_2@115" \
+        "ClockBlurManager@355_parent@218" "SecVibrator-HAL-AIDL-CORE" \
+        "SecVibrator-HAL-AIDL-EXT" "pageboostd" "KeyguardFingerPrintSwipe" \
+        "WorkSourceUtil" "AOD_CONFIG@AODConfigurationController" \
+        "HoneySpace.ReflectionUtils" "HoneySpace.OnBoardingUtil" \
+        "SettingsToPropertiesMapper" "AutofillManagerServiceImpl" \
+        "GuestManager" "PocketModeEvent" "PocketMotionManager" \
+        "AutomaticBrightnessController" "DreamController" "LSO_LSOInterface" \
+        "NotifRow" "MODManager" "bauth_FPQCBAuthSensorControl" \
+        "FaceServiceStorage" "BiometricScheduler" "MotionRecognitionService" \
+        "WifiGuiderService" "TransitionChain" "ConsumerBase"; do
+        _SET_LOG_TAG_LEVEL "$TAG" "F"
+    done
 }
 
 _PATCH_CONST_BEFORE_BOOL_IPUT()
@@ -277,6 +481,116 @@ _PATCH_BOOL_METHOD_RETURN()
     }
 
     LOG "- Forced $METHOD to return $VALUE"
+}
+
+_PATCH_A2DP_LEGACY_CODEC_PRIORITIES()
+{
+    local SMALI="$1"
+
+    [ -f "$SMALI" ] || ABORT "A2dpCodecConfig.smali not found"
+
+    if grep -q "MonsterROM One UI 9 legacy BT codec guard" "$SMALI"; then
+        LOG "- A2DP legacy codec priorities already patched"
+        return 0
+    fi
+
+    awk '
+        {
+            print
+            if ($0 ~ /iput v1, p0, Lcom\/android\/bluetooth\/a2dp\/A2dpCodecConfig;->mA2dpSourceCodecPrioritySscUhq:I/) {
+                print ""
+                print "    # MonsterROM One UI 9 legacy BT codec guard"
+                print "    const/16 v0, 0x3e9"
+                print "    iput v0, p0, Lcom/android/bluetooth/a2dp/A2dpCodecConfig;->mA2dpSourceCodecPrioritySbc:I"
+                print ""
+                print "    const v0, 0xdbba0"
+                print "    iput v0, p0, Lcom/android/bluetooth/a2dp/A2dpCodecConfig;->mA2dpSourceCodecPriorityAac:I"
+                print ""
+                print "    const/4 v0, -0x1"
+                print "    iput v0, p0, Lcom/android/bluetooth/a2dp/A2dpCodecConfig;->mA2dpSourceCodecPriorityAptx:I"
+                print "    iput v0, p0, Lcom/android/bluetooth/a2dp/A2dpCodecConfig;->mA2dpSourceCodecPriorityAptxHd:I"
+                print "    iput v0, p0, Lcom/android/bluetooth/a2dp/A2dpCodecConfig;->mA2dpSourceCodecPriorityLdac:I"
+                print "    iput v0, p0, Lcom/android/bluetooth/a2dp/A2dpCodecConfig;->mA2dpSourceCodecPriorityOpus:I"
+                print "    iput v0, p0, Lcom/android/bluetooth/a2dp/A2dpCodecConfig;->mA2dpSourceCodecPriorityLhdcv5:I"
+                print "    iput v0, p0, Lcom/android/bluetooth/a2dp/A2dpCodecConfig;->mA2dpSourceCodecPrioritySsc:I"
+                print "    iput v0, p0, Lcom/android/bluetooth/a2dp/A2dpCodecConfig;->mA2dpSourceCodecPrioritySscUhq:I"
+                patched = 1
+            }
+        }
+        END { if (!patched) exit 2 }
+    ' "$SMALI" > "$SMALI.tmp" && mv "$SMALI.tmp" "$SMALI" || {
+        rm -f "$SMALI.tmp"
+        ABORT "Failed to patch A2DP legacy codec priorities"
+    }
+
+    LOG "- Forced A2DP codec priorities to AAC/SBC and disabled LDAC/SSC/aptX"
+}
+
+_PATCH_AUDIO_MUTE_AWAIT_CONNECTION_DUPLICATE()
+{
+    local SMALI
+    local COUNT
+
+    LOG "- Making duplicate Bluetooth mute-await requests non-fatal"
+    DECODE_APK "system" "system/framework/services.jar" || ABORT "Failed to decode services.jar"
+
+    SMALI="$APKTOOL_DIR/system/framework/services.jar/smali/com/android/server/audio/AudioService.smali"
+    [ -f "$SMALI" ] || ABORT "AudioService.smali not found in decoded services.jar"
+
+    if ! grep -q "muteAwaitConnection already in progress" "$SMALI"; then
+        LOG "- AudioService duplicate mute-await branch already patched"
+        return 0
+    fi
+
+    awk '
+        BEGIN {
+            inside = 0
+            skip_throw_branch = 0
+            cleanup_catch = 0
+            patched = 0
+        }
+        /^\.method/ && index($0, "muteAwaitConnection([ILandroid/media/AudioDeviceAttributes;J)V") {
+            inside = 1
+        }
+        inside && index($0, "new-instance p0, Ljava/lang/IllegalStateException;") {
+            print "    monitor-exit v1"
+            print "    :try_end_1"
+            print "    .catchall {:try_start_1 .. :try_end_1} :catchall_0"
+            print ""
+            print "    return-void"
+            print ""
+            skip_throw_branch = 1
+            patched = 1
+            next
+        }
+        inside && skip_throw_branch {
+            if ($0 ~ /^[[:space:]]*:goto_0/) {
+                print
+                skip_throw_branch = 0
+                cleanup_catch = 1
+            }
+            next
+        }
+        inside && cleanup_catch && ($0 ~ /^[[:space:]]*:try_end_1$/ || index($0, ".catchall {:try_start_1 .. :try_end_1} :catchall_0")) {
+            next
+        }
+        inside && /^\.end method/ {
+            inside = 0
+            cleanup_catch = 0
+        }
+        { print }
+        END {
+            if (!patched) exit 2
+            print patched > "/dev/stderr"
+        }
+    ' "$SMALI" > "$SMALI.tmp" 2> "$SMALI.count" && mv "$SMALI.tmp" "$SMALI" || {
+        rm -f "$SMALI.tmp" "$SMALI.count"
+        ABORT "Failed to patch AudioService duplicate mute-await branch"
+    }
+
+    COUNT="$(cat "$SMALI.count")"
+    rm -f "$SMALI.count"
+    LOG "- Patched $COUNT AudioService duplicate mute-await branch"
 }
 
 _APEX_PAYLOAD_COPY_OUT()
@@ -362,6 +676,8 @@ _PATCH_BLUETOOTH_APEX_OFFLOAD()
     _PATCH_BOOL_METHOD_RETURN \
         "$BT_APK_DECODED/smali/com/android/bluetooth/btservice/AdapterProperties.smali" \
         "isA2dpOffloadEnabled()Z" "false"
+    _PATCH_A2DP_LEGACY_CODEC_PRIORITIES \
+        "$BT_APK_DECODED/smali/com/android/bluetooth/a2dp/A2dpCodecConfig.smali"
 
     TMPDIR="$APKTOOL_TMP" JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Djava.io.tmpdir=$APKTOOL_TMP" \
         "$TOOLS_DIR/bin/apktool" b -j "$(nproc)" -srp "$BT_APK_DECODED" >/dev/null
@@ -444,6 +760,33 @@ _PATCH_BLUETOOTH_APEX_OFFLOAD()
     LOG_STEP_OUT
 }
 
+_PATCH_BEACONMANAGER_LOCATION_PERMISSIONS()
+{
+    local BEACON_APK="system/priv-app/BeaconManager/BeaconManager.apk"
+    local BEACON_DECODED="$APKTOOL_DIR/system/${BEACON_APK//system\/}"
+    local MANIFEST="$BEACON_DECODED/AndroidManifest.xml"
+    local PERM
+
+    [ -f "$WORK_DIR/system/$BEACON_APK" ] || return 0
+
+    LOG_STEP_IN "- Adding BeaconManager BLE location permissions"
+    DECODE_APK "system" "$BEACON_APK" || ABORT "Failed to decode BeaconManager.apk"
+
+    [ -f "$MANIFEST" ] || ABORT "Decoded BeaconManager manifest not found"
+
+    for PERM in \
+        android.permission.ACCESS_COARSE_LOCATION \
+        android.permission.ACCESS_FINE_LOCATION \
+        android.permission.ACCESS_BACKGROUND_LOCATION; do
+        if ! grep -q "android:name=\"$PERM\"" "$MANIFEST"; then
+            sed -i "0,/^[[:space:]]*<application/{s#^[[:space:]]*<application#    <uses-permission android:name=\"$PERM\" />\\n\\n    <application#}" "$MANIFEST"
+            LOG "- Added $PERM"
+        fi
+    done
+
+    LOG_STEP_OUT
+}
+
 # The legacy Exynos (Chiclet) kernel cannot load the Android 17 mainline BPF
 # programs, so netbpfload never sets "bpf.progs_loaded" to 1. Left as shipped,
 # the "on load-bpf-programs" action hangs forever on its wait_for_prop, and the
@@ -492,7 +835,10 @@ _DISABLE_SURFACEFLINGER_SHADER_CACHE
 _DISABLE_UNSUPPORTED_MAINLINE_FEATURES
 _DISABLE_UNSUPPORTED_BT_OFFLOAD
 _DISABLE_UNSUPPORTED_OUI9_INIT_WRITES
+_QUIET_VISIBLE_LOGFOX_NOISE
+_PATCH_AUDIO_MUTE_AWAIT_CONNECTION_DUPLICATE
 _PATCH_BLUETOOTH_APEX_OFFLOAD
+_PATCH_BEACONMANAGER_LOCATION_PERMISSIONS
 _DISABLE_STALE_KEYMASTER_WAIT
 _PATCH_SENSORHUB_SYSFS_LOG_NOISE
 _DROP_MISSING_SENSOR_HAL_BLOBS
@@ -505,8 +851,10 @@ ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/etc/selinux/mapping/30.0.com
 
 ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "etc/ueventd.rc" 0 0 644 "u:object_r:vendor_configs_file:s0"
 ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "ueventd.rc" 0 0 644 "u:object_r:vendor_configs_file:s0"
+ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "etc/bluetooth_audio_policy_configuration.xml" 0 0 644 "u:object_r:vendor_configs_file:s0"
 ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "etc/init/android.hardware.sensors@2.0-service-multihal.rc" 0 0 644 "u:object_r:vendor_configs_file:s0"
 ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "bin/monsterrom_wait_sensors_ready.sh" 0 2000 755 "u:object_r:vendor_file:s0"
+ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "system" "system/etc/default-permissions/default-permissions-com.samsung.android.beaconmanager.xml" 0 0 644 "u:object_r:system_file:s0"
 
-unset -f GET_SYSTEM_EXT _SED_DELETE_IF_EXISTS _FOR_EACH_EXYNOS_INIT _DISABLE_PERFETTO_TRACED _FIX_STRONGBOX_KEYMASTER_RC _DISABLE_STALE_KEYMASTER_WAIT _PATCH_SENSORHUB_SYSFS_LOG_NOISE _DROP_MISSING_SENSOR_HAL_BLOBS _DISABLE_SURFACEFLINGER_SHADER_CACHE _DISABLE_UNSUPPORTED_MAINLINE_FEATURES _DISABLE_UNSUPPORTED_BT_OFFLOAD _DISABLE_UNSUPPORTED_OUI9_INIT_WRITES _PATCH_CONST_BEFORE_BOOL_IPUT _PATCH_BOOL_METHOD_RETURN _PATCH_BLUETOOTH_APEX_OFFLOAD
+unset -f GET_SYSTEM_EXT _SED_DELETE_IF_EXISTS _FOR_EACH_EXYNOS_INIT _DISABLE_PERFETTO_TRACED _FIX_STRONGBOX_KEYMASTER_RC _DISABLE_STALE_KEYMASTER_WAIT _PATCH_SENSORHUB_SYSFS_LOG_NOISE _DROP_MISSING_SENSOR_HAL_BLOBS _DISABLE_SURFACEFLINGER_SHADER_CACHE _DISABLE_UNSUPPORTED_MAINLINE_FEATURES _DISABLE_UNSUPPORTED_BT_OFFLOAD _DISABLE_UNSUPPORTED_OUI9_INIT_WRITES _SET_LOG_TAG_LEVEL _QUIET_VISIBLE_LOGFOX_NOISE _PATCH_CONST_BEFORE_BOOL_IPUT _PATCH_BOOL_METHOD_RETURN _PATCH_AUDIO_MUTE_AWAIT_CONNECTION_DUPLICATE _PATCH_BLUETOOTH_APEX_OFFLOAD _PATCH_BEACONMANAGER_LOCATION_PERMISSIONS
 LOG_STEP_OUT

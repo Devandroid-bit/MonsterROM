@@ -18,12 +18,13 @@ SET_PROP_IF_DIFF "vendor_dlkm" "persist.sys.usb.config" "$(GET_PROP "vendor_dlkm
 SET_PROP_IF_DIFF "system" "ro.adb.secure" "0"
 SET_PROP_IF_DIFF "vendor" "ro.adb.secure" "0"
 
-# Enable klogd daemon
+# Keep kernel logs out of logd by default; use dmesg/pstore for kernel debugging.
 # https://android.googlesource.com/platform/system/logging/+/refs/tags/android-16.0.0_r2/logd/main.cpp#214
-SET_PROP "system" "ro.logd.kernel" "true"
+SET_PROP "system" "ro.logd.kernel" "false"
 
-# Do not filter out Samsung processes in logs
-SET_PROP_IF_DIFF "system" "persist.log.semlevel" "0xFFFFFFFF"
+# Keep Samsung logging usable without the maximum debug flood.
+SET_PROP_IF_DIFF "system" "persist.log.level" "0xFFFFFFFF"
+SET_PROP_IF_DIFF "system" "persist.log.semlevel" "0xFFFFFF00"
 
 if [ -f "$WORK_DIR/system/system/etc/init/hw/init.usb.rc" ]; then
     if ! grep -q "persist.vendor.radio.port_index" "$WORK_DIR/system/system/etc/init/hw/init.usb.rc"; then

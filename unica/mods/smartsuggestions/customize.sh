@@ -2,6 +2,7 @@ SMART_SUGGESTIONS_APK="system/priv-app/SamsungSmartSuggestions/SamsungSmartSugge
 SMART_SUGGESTIONS_RUNE="smali_classes15/com/samsung/android/smartsuggestions/featureconfig/rune/Rune.smali"
 SMART_SUGGESTIONS_SSCO_REQUESTER="smali_classes15/com/samsung/android/smartsuggestions/search/core/embedding/i.smali"
 SMART_SUGGESTIONS_SSCO_PROVIDER="smali_classes15/com/samsung/android/smartsuggestions/search/provider/ProviderCallMethod\$25.smali"
+SMART_SUGGESTIONS_APK_DIR="$APKTOOL_DIR/system/${SMART_SUGGESTIONS_APK//system\/}"
 
 ENABLE_SMART_SUGGESTIONS_RUNE()
 {
@@ -12,15 +13,36 @@ ENABLE_SMART_SUGGESTIONS_RUNE()
 
 DECODE_APK "system" "$SMART_SUGGESTIONS_APK" || return 1
 
+LOG "- Repairing Smart Suggestions commonsense airport database"
+if [ -s "$SMART_SUGGESTIONS_APK_DIR/assets/commonsense/airport_names_v1.0.0.csv.gzd" ] && \
+        [ ! -s "$SMART_SUGGESTIONS_APK_DIR/assets/commonsense/airport_names_v1.0.1.csv.gzd" ]; then
+    EVAL "cp -f \"$SMART_SUGGESTIONS_APK_DIR/assets/commonsense/airport_names_v1.0.0.csv.gzd\" \"$SMART_SUGGESTIONS_APK_DIR/assets/commonsense/airport_names_v1.0.1.csv.gzd\"" || return 1
+fi
+
+LOG "- Disabling unsupported Smart Suggestions SSCO semantic provider path"
+SMALI_PATCH "system" "$SMART_SUGGESTIONS_APK" "$SMART_SUGGESTIONS_SSCO_REQUESTER" "replace" \
+    "b(Ljava/lang/String;Ljava/lang/String;)[F" \
+    "new-instance v0, Lcom/samsung/android/smartsuggestions/feature/aisuggestion/ui/test/c;" \
+    "    const/4 p0, 0x0\n\n    return-object p0" \
+    > /dev/null || true
+SMALI_PATCH "system" "$SMART_SUGGESTIONS_APK" "$SMART_SUGGESTIONS_SSCO_REQUESTER" "return" \
+    "d(Ljava/lang/String;)Z" \
+    "false" \
+    > /dev/null || true
+SMALI_PATCH "system" "$SMART_SUGGESTIONS_APK" "$SMART_SUGGESTIONS_SSCO_REQUESTER" "return" \
+    "e()Z" \
+    "false" \
+    > /dev/null || true
+SMALI_PATCH "system" "$SMART_SUGGESTIONS_APK" "$SMART_SUGGESTIONS_SSCO_PROVIDER" "replace" \
+    "invoke(Ljava/lang/String;Ljava/lang/String;Landroid/os/Bundle;)Landroid/os/Bundle;" \
+    "invoke-virtual {p0, p3, p1}, Landroid/os/BaseBundle;->putBoolean(Ljava/lang/String;Z)V" \
+    "invoke-virtual {p0, p3, v0}, Landroid/os/BaseBundle;->putBoolean(Ljava/lang/String;Z)V" \
+    > /dev/null || true
+
 LOG "- Silencing unsupported Smart Suggestions SSCO probes"
 SMALI_PATCH "system" "$SMART_SUGGESTIONS_APK" "$SMART_SUGGESTIONS_SSCO_REQUESTER" "replace" \
     "c()J" \
     "invoke-static {v2, v1, v0}, Lcom/samsung/android/smartsuggestions/search/util/v;->k(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V" \
-    "nop" \
-    > /dev/null || true
-SMALI_PATCH "system" "$SMART_SUGGESTIONS_APK" "$SMART_SUGGESTIONS_SSCO_REQUESTER" "replace" \
-    "d(Ljava/lang/String;)Z" \
-    "invoke-static {v2, p0, v1}, Lcom/samsung/android/smartsuggestions/search/util/v;->k(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V" \
     "nop" \
     > /dev/null || true
 SMALI_PATCH "system" "$SMART_SUGGESTIONS_APK" "$SMART_SUGGESTIONS_SSCO_PROVIDER" "replace" \
@@ -168,4 +190,4 @@ ENABLE_SMART_SUGGESTIONS_RUNE "getSUPPORT_WEEKEND_RECOMMEND_CARD()Z"
 ENABLE_SMART_SUGGESTIONS_RUNE "getSUPPORT_YOUTUBE_NEW_CARD()Z"
 
 unset -f ENABLE_SMART_SUGGESTIONS_RUNE
-unset SMART_SUGGESTIONS_APK SMART_SUGGESTIONS_RUNE SMART_SUGGESTIONS_SSCO_REQUESTER SMART_SUGGESTIONS_SSCO_PROVIDER
+unset SMART_SUGGESTIONS_APK SMART_SUGGESTIONS_RUNE SMART_SUGGESTIONS_SSCO_REQUESTER SMART_SUGGESTIONS_SSCO_PROVIDER SMART_SUGGESTIONS_APK_DIR
