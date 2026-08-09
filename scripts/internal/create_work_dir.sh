@@ -104,50 +104,10 @@ COPY_SOURCE_FIRMWARE()
     fi
 }
 
-COPY_TARGET_FIRMWARE()
-{
-    local TARGET_FOLDERS="odm_dlkm system_dlkm vendor vendor_dlkm"
-    for f in $TARGET_FOLDERS; do
-        if [ -d "$FW_DIR/$TARGET_FIRMWARE_PATH/$f" ]; then
-            LOG "- Copying /$f from target firmware"
-            EVAL "rsync -a --mkpath --delete \"$FW_DIR/$TARGET_FIRMWARE_PATH/$f\" \"$WORK_DIR\"" || exit 1
-            EVAL "cp -a \"$FW_DIR/$TARGET_FIRMWARE_PATH/file_context-$f\" \"$WORK_DIR/configs/file_context-$f\"" || exit 1
-            EVAL "cp -a \"$FW_DIR/$TARGET_FIRMWARE_PATH/fs_config-$f\" \"$WORK_DIR/configs/fs_config-$f\"" || exit 1
-            if [[ "$f" == "vendor" ]]; then
-                LOG_STEP_IN
-                SET_PROP "vendor" "ro.config.ringtone" "$(GET_PROP "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/build.prop" "ro.config.ringtone")"
-                SET_PROP "vendor" "ro.config.notification_sound" "$(GET_PROP "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/build.prop" "ro.config.notification_sound")"
-                SET_PROP "vendor" "ro.config.alarm_alert" "$(GET_PROP "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/build.prop" "ro.config.alarm_alert")"
-                SET_PROP "vendor" "ro.config.media_sound" "$(GET_PROP "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/build.prop" "ro.config.media_sound")"
-                SET_PROP "vendor" "ro.config.ringtone_2" "$(GET_PROP "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/build.prop" "ro.config.ringtone_2")"
-                SET_PROP "vendor" "ro.config.notification_sound_2" "$(GET_PROP "$FW_DIR/$SOURCE_FIRMWARE_PATH/vendor/build.prop" "ro.config.notification_sound_2")"
-                LOG_STEP_OUT
-            fi
-        else
-            [ -d "$WORK_DIR/$f" ] && rm -rf "${WORK_DIR:?}/$f"
-            [ -f "$WORK_DIR/configs/file_context-$f" ] && rm -f "$WORK_DIR/configs/file_context-$f"
-            [ -f "$WORK_DIR/configs/fs_config-$f" ] && rm -f "$WORK_DIR/configs/fs_config-$f"
-        fi
-    done
-}
-
-COPY_TARGET_KERNEL()
-{
-    if [ -d "$FW_DIR/$TARGET_FIRMWARE_PATH/kernel" ]; then
-        LOG_STEP_IN "- Copying target firmware kernel images"
-        EVAL "rsync -a --mkpath --delete \"$FW_DIR/$TARGET_FIRMWARE_PATH/kernel\" \"$WORK_DIR\"" || exit 1
-        $TARGET_KEEP_ORIGINAL_SIGN || find "$WORK_DIR/kernel" -mindepth 1 -exec "$SRC_DIR/scripts/unsign_bin.sh" {} \;
-        LOG_STEP_OUT
-    else
-        [ -d "$WORK_DIR/kernel" ] && rm -rf "$WORK_DIR/kernel"
-    fi
-}
 # ]
 
 mkdir -p "$WORK_DIR"
 mkdir -p "$WORK_DIR/configs"
 COPY_SOURCE_FIRMWARE
-COPY_TARGET_FIRMWARE
-COPY_TARGET_KERNEL
 
 exit 0
