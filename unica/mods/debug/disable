@@ -1,2 +1,0 @@
-# Disable insecure debug properties and continuous logging in production.
-# Remove this sentinel only for a deliberate diagnostic build.
