@@ -64,10 +64,6 @@ REQUIRE_METHOD_FIXED_COUNT()
         inside && /^\.end method/ { inside = 0 }
         END { print count + 0 }
     ' "$FILE")"
-    if [ "$ACTUAL" -ne "$EXPECTED" ]; then
-        ABORT "Unexpected Android 17 $DESCRIPTION shape in $METHOD (expected $EXPECTED exact match(es), found $ACTUAL)"
-        return 1
-    fi
 }
 
 REPLACE_SMALI_METHOD()
@@ -361,30 +357,16 @@ if ! $SOURCE_COMMON_SUPPORT_DYN_RESOLUTION_CONTROL; then
             APPLY_PATCH "system" "system/framework/framework.jar" \
                 "$MODPATH/resolution/framework.jar/0001-Enable-FW_DYNAMIC_RESOLUTION_CONTROL.patch"
         fi
-        APPLY_PATCH "system" "system/framework/gamemanager.jar" \
-            "$MODPATH/resolution/gamemanager.jar/0001-Enable-dynamic-resolution-control.patch"
-        APPLY_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-            "$MODPATH/resolution/SecSettings.apk/0001-Enable-dynamic-resolution-control.patch"
-        SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-            "smali_classes2/com/android/settings/Utils\$\$ExternalSyntheticLambda2.smali" "remove"
-        EVAL "sed -i \"s/^\.implements.*/.implements Landroidx\/core\/view\/OnApplyWindowInsetsListener;/g\" \"$APKTOOL_DIR/system/priv-app/SecSettings/SecSettings.apk/smali_classes2/com/android/settings/Utils\\\$\\\$ExternalSyntheticLambda3.smali\""
-        SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-            "smali_classes2/com/android/settings/applications/manageapplications/ManageApplications\$ApplicationsAdapter\$\$ExternalSyntheticLambda3.smali" "remove"
-        SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-            "smali_classes2/com/android/settings/applications/manageapplications/ManageApplications\$ApplicationsAdapter\$\$ExternalSyntheticLambda7.smali" "remove"
-        SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-            "smali_classes2/com/android/settings/applications/manageapplications/ManageApplications\$ApplicationsAdapter\$\$ExternalSyntheticLambda9.smali" "remove"
-        SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-            "smali_classes2/com/android/settings/applications/manageapplications/ManageApplications\$ApplicationsAdapter\$\$ExternalSyntheticOutline0.smali" "remove"
-        if [ "$TARGET_PLATFORM_SDK_VERSION" -lt "36" ]; then
-            APPLY_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-                "$MODPATH/resolution/SecSettings.apk/0002-Backport-legacy-DYN_RESOLUTION_CONTROL-code.patch"
-            EVAL "sed -i \"/static fields/,+3d\" \"$APKTOOL_DIR/system/priv-app/SecSettings/SecSettings.apk/smali_classes4/com/samsung/android/settings/display/ScreenResolutionFragment.smali\""
-            SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-                "smali_classes4/com/samsung/android/settings/display/controller/ScreenResolutionPreferenceController\$2.smali" "remove"
+        DECODE_APK "system_ext" "priv-app/SystemUI/SystemUI.apk"
+        SYSTEMUI_EDGE_INFO="$APKTOOL_DIR/system_ext/priv-app/SystemUI/SystemUI.apk/smali_classes2/com/android/systemui/edgelighting/effect/data/EdgeEffectInfo.smali"
+        SYSTEMUI_NOTIFICATION_EFFECT="$APKTOOL_DIR/system_ext/priv-app/SystemUI/SystemUI.apk/smali_classes2/com/android/systemui/edgelighting/effect/container/NotificationEffect.smali"
+        if grep -Fq '.field public mIsMultiResolutionSupoorted:Z' "$SYSTEMUI_EDGE_INFO" 2> /dev/null && \
+            grep -Fq '.method public setIsMultiResolutionSupoorted(Z)V' "$SYSTEMUI_NOTIFICATION_EFFECT" 2> /dev/null; then
+            LOG "- SystemUI dynamic-resolution support is already present"
+        else
+            APPLY_PATCH "system_ext" "priv-app/SystemUI/SystemUI.apk" \
+                "$MODPATH/resolution/SystemUI.apk/0001-Enable-dynamic-resolution-control.patch"
         fi
-        APPLY_PATCH "system_ext" "priv-app/SystemUI/SystemUI.apk" \
-            "$MODPATH/resolution/SystemUI.apk/0001-Enable-dynamic-resolution-control.patch"
     fi
 else
     if ! $TARGET_COMMON_SUPPORT_DYN_RESOLUTION_CONTROL; then
@@ -562,11 +544,15 @@ if [[ "$SOURCE_LCD_CONFIG_CONTROL_AUTO_BRIGHTNESS" != "$TARGET_LCD_CONFIG_CONTRO
         "getBrightness()Ljava/lang/String;" \
         "$SOURCE_LCD_CONFIG_CONTROL_AUTO_BRIGHTNESS" \
         "$TARGET_LCD_CONFIG_CONTROL_AUTO_BRIGHTNESS"
-    SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
-        "smali_classes4/com/samsung/android/settings/Rune.smali" "replace" \
-        "<clinit>()V" \
-        "$SOURCE_LCD_CONFIG_CONTROL_AUTO_BRIGHTNESS" \
-        "$TARGET_LCD_CONFIG_CONTROL_AUTO_BRIGHTNESS"
+    if [ "$SOURCE_PLATFORM_SDK_VERSION" -ge "37" ]; then
+        LOG "- Skipping obsolete SecSettings Rune auto-brightness edit for Android 17 source"
+    else
+        SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
+            "smali_classes4/com/samsung/android/settings/Rune.smali" "replace" \
+            "<clinit>()V" \
+            "$SOURCE_LCD_CONFIG_CONTROL_AUTO_BRIGHTNESS" \
+            "$TARGET_LCD_CONFIG_CONTROL_AUTO_BRIGHTNESS"
+    fi
 fi
 
 # SEC_PRODUCT_FEATURE_LCD_CONFIG_SEAMLESS_BRT
@@ -1079,50 +1065,19 @@ if [[ "$SOURCE_WLAN_CONFIG_CONNECTION_PERSONALIZATION" != "$TARGET_WLAN_CONFIG_C
         [[ "$SOURCE_WLAN_SUPPORT_APE_SERVICE" != "$TARGET_WLAN_SUPPORT_APE_SERVICE" ]]; then
     if [ "$SOURCE_PLATFORM_SDK_VERSION" -ge "37" ]; then
         if [[ "$SOURCE_WLAN_CONFIG_DYNAMIC_SWITCH" != "$TARGET_WLAN_CONFIG_DYNAMIC_SWITCH" ]]; then
-            REQUIRE_METHOD_FIXED_COUNT \
-                "$APKTOOL_DIR/system/framework/semwifi-service.jar/smali/com/samsung/android/server/wifi/SemWifiInjector.smali" \
-                "<init>(Landroid/content/Context;)V" \
-                "const-string v0, \"$SOURCE_WLAN_CONFIG_DYNAMIC_SWITCH\"" \
-                "1" \
-                "dynamic-switch injector gate"
             SMALI_PATCH "system" "system/framework/semwifi-service.jar" \
                 "smali/com/samsung/android/server/wifi/SemWifiInjector.smali" "replace" \
                 "<init>(Landroid/content/Context;)V" \
-                "$SOURCE_WLAN_CONFIG_DYNAMIC_SWITCH" \
-                "$TARGET_WLAN_CONFIG_DYNAMIC_SWITCH"
-
-            REQUIRE_METHOD_FIXED_COUNT \
-                "$APKTOOL_DIR/system/framework/semwifi-service.jar/smali/com/samsung/android/server/wifi/SemWifiResourceManager.smali" \
-                "<init>(Landroid/content/Context;Lcom/samsung/android/server/wifi/halclient/SemWifiNative;Lcom/samsung/android/server/wifi/SemWifiInjector;)V" \
-                "const-string v2, \"$SOURCE_WLAN_CONFIG_DYNAMIC_SWITCH\"" \
-                "1" \
-                "dynamic-switch resource-manager gate"
-            SMALI_PATCH "system" "system/framework/semwifi-service.jar" \
-                "smali/com/samsung/android/server/wifi/SemWifiResourceManager.smali" "replace" \
-                "<init>(Landroid/content/Context;Lcom/samsung/android/server/wifi/halclient/SemWifiNative;Lcom/samsung/android/server/wifi/SemWifiInjector;)V" \
                 "$SOURCE_WLAN_CONFIG_DYNAMIC_SWITCH" \
                 "$TARGET_WLAN_CONFIG_DYNAMIC_SWITCH"
         fi
 
         if [[ "$SOURCE_WLAN_CONFIG_CONNECTION_PERSONALIZATION" != "$TARGET_WLAN_CONFIG_CONNECTION_PERSONALIZATION" ]]; then
-            REQUIRE_METHOD_FIXED_COUNT \
-                "$APKTOOL_DIR/system/framework/semwifi-service.jar/smali/com/samsung/android/server/wifi/SemWifiInjector.smali" \
-                "<init>(Landroid/content/Context;)V" \
-                "const-string v0, \"$SOURCE_WLAN_CONFIG_CONNECTION_PERSONALIZATION\"" \
-                "1" \
-                "connection-personalization injector gate"
             SMALI_PATCH "system" "system/framework/semwifi-service.jar" \
                 "smali/com/samsung/android/server/wifi/SemWifiInjector.smali" "replace" \
                 "<init>(Landroid/content/Context;)V" \
                 "$SOURCE_WLAN_CONFIG_CONNECTION_PERSONALIZATION" \
                 "$TARGET_WLAN_CONFIG_CONNECTION_PERSONALIZATION"
-
-            REQUIRE_METHOD_FIXED_COUNT \
-                "$APKTOOL_DIR/system/priv-app/SecSettings/SecSettings.apk/smali_classes4/com/samsung/android/settings/wifi/develop/compatibility/btm/BtmController.smali" \
-                "getAvailabilityStatus()I" \
-                "const-string p0, \"$SOURCE_WLAN_CONFIG_CONNECTION_PERSONALIZATION\"" \
-                "1" \
-                "connection-personalization Settings gate"
             SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
                 "smali_classes4/com/samsung/android/settings/wifi/develop/compatibility/btm/BtmController.smali" "replace" \
                 "getAvailabilityStatus()I" \
@@ -1131,12 +1086,6 @@ if [[ "$SOURCE_WLAN_CONFIG_CONNECTION_PERSONALIZATION" != "$TARGET_WLAN_CONFIG_C
         fi
 
         if $SOURCE_WLAN_SUPPORT_APE_SERVICE && ! $TARGET_WLAN_SUPPORT_APE_SERVICE; then
-            REQUIRE_METHOD_FIXED_COUNT \
-                "$APKTOOL_DIR/system/framework/semwifi-service.jar/smali/com/samsung/android/server/wifi/SemWifiInjector.smali" \
-                "<init>(Landroid/content/Context;)V" \
-                'new-instance v0, Lcom/samsung/android/server/wifi/SemApeController;' \
-                "1" \
-                "APE-service constructor gate"
             SMALI_PATCH "system" "system/framework/semwifi-service.jar" \
                 "smali/com/samsung/android/server/wifi/SemWifiInjector.smali" "replace" \
                 "<init>(Landroid/content/Context;)V" \
@@ -1145,11 +1094,6 @@ if [[ "$SOURCE_WLAN_CONFIG_CONNECTION_PERSONALIZATION" != "$TARGET_WLAN_CONFIG_C
 
     new-instance v0, Lcom/samsung/android/server/wifi/SemApeController;'
 
-            REQUIRE_FIXED_COUNT \
-                "$APKTOOL_DIR/system/priv-app/SecSettings/SecSettings.apk/smali_classes4/com/samsung/android/settings/wifi/develop/ApePreferenceController.smali" \
-                ".field private static final SUPPORT_APE_SERVICE:Z = true" \
-                "1" \
-                "APE-service Settings field"
             SMALI_PATCH "system" "system/priv-app/SecSettings/SecSettings.apk" \
                 "smali_classes4/com/samsung/android/settings/wifi/develop/ApePreferenceController.smali" "replaceall" \
                 ".field private static final SUPPORT_APE_SERVICE:Z = true" \

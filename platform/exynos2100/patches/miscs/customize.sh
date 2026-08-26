@@ -68,7 +68,7 @@ _FIX_STRONGBOX_KEYMASTER_RC()
 
 _DISABLE_STALE_KEYMASTER_WAIT()
 {
-    local INIT_RC="$WORK_DIR/vendor/etc/init/hw/init.exynos2100.rc"
+    local INIT_RC="$WORK_DIR/vendor/etc/init/init.exynos2100.rc"
     
     [ -f "$INIT_RC" ] || return 0
 
@@ -340,11 +340,13 @@ _DISABLE_UNSUPPORTED_BT_OFFLOAD()
 
 _DISABLE_UNSUPPORTED_OUI9_INIT_WRITES()
 {
-    LOG "- Removing One UI 9 init writes rejected by the Exynos2100 kernel"
+    LOG "- Removing One UI 9 init writes rejected by the legacy Exynos kernel"
     _SED_DELETE_IF_EXISTS "$WORK_DIR/system/system/etc/init/hw/init.rc" \
         -e "/^[[:space:]]*exec_start init_dev_config$/d"
     _SED_DELETE_IF_EXISTS "$WORK_DIR/system/system/etc/init/init.memory.rc" "/\/sys\/kernel\/mm\/transparent_hugepage\/khugepaged\/max_ptes_shared/d"
-    _SED_DELETE_IF_EXISTS "$WORK_DIR/system/system/etc/init/atrace.rc" "/\/sys\/kernel\/tracing\/synthetic_events/d"
+    _SED_DELETE_IF_EXISTS "$WORK_DIR/system/system/etc/init/atrace.rc" \
+        -e "/\/sys\/kernel\/tracing\/synthetic_events/d" \
+        -e "/\/sys\/kernel\/debug\/tracing\/synthetic_events/d"
     _SED_DELETE_IF_EXISTS "$WORK_DIR/system/system/etc/init/hw/init.rc" \
         -e "/\/dev\/blkio\/blkio\.weight/d" \
         -e "/\/dev\/blkio\/background\/blkio\.weight/d" \
@@ -356,7 +358,7 @@ _DISABLE_UNSUPPORTED_OUI9_INIT_WRITES()
         -e "/\/dev\/blkio\/high\/blkio\.ssg\.max_available_ratio/d" \
         -e "/\/dev\/blkio\/normal\/blkio\.ssg\.max_available_ratio/d" \
         -e "/\/dev\/blkio\/low\/blkio\.ssg\.max_available_ratio/d" \
-        -e "/\/sys\/class\/sensors\/grip_sensor\/grip_request_firmware/d" \
+        -e "/\/sys\/class\/sensors\/grip_sensor[^\/]*\/grip_request_firmware/d" \
         -e "/\/dev\/sys\/fs\/by-name\/userdata\/seq_file_ra_mul/d" \
         -e "/\/sys\/class\/power_supply\/battery\/batt_update_data/d"
     _SED_DELETE_IF_EXISTS "$WORK_DIR/system/system/etc/init/init.sec-charger.rc" "/\/sys\/class\/power_supply\/battery\/batt_update_data/d"
@@ -659,6 +661,7 @@ ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "vendor" "bin/monsterrom_wai
 ADD_TO_WORK_DIR "platform/exynos2100/patches/miscs" "system" "system/etc/default-permissions/default-permissions-com.samsung.android.beaconmanager.xml" 0 0 644 "u:object_r:system_file:s0"
 
 _FIX_STRONGBOX_KEYMASTER_RC
+_DISABLE_PERFETTO_TRACED
 _DISABLE_STALE_KEYMASTER_WAIT
 _PATCH_SENSORHUB_SYSFS_LOG_NOISE
 _DROP_MISSING_SENSOR_HAL_BLOBS

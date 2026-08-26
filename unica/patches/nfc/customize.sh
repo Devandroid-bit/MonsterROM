@@ -1,1 +1,1 @@
-SET_PROP "vendor" "ro.vendor.nfc.info.antpos" "27"
+SET_PROP "vendor" "ro.vendor.nfc.info.antpos" "29"

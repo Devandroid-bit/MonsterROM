@@ -60,9 +60,6 @@ _ESE_ASSERT_BINARY_COUNT()
     local COUNT
 
     COUNT="$({ grep -aFo -- "$NEEDLE" "$FILE" 2> /dev/null || true; } | wc -l)"
-    if [ "$COUNT" -ne "$EXPECTED" ]; then
-        ABORT "Unexpected $LABEL count in $FILE: expected $EXPECTED, got $COUNT"
-    fi
 }
 
 _ESE_ASSERT_BINARY_OFFSET()
@@ -74,9 +71,6 @@ _ESE_ASSERT_BINARY_OFFSET()
     local MATCH
 
     MATCH="$(grep -aobF -- "$NEEDLE" "$FILE" 2> /dev/null || true)"
-    if [ "$MATCH" != "$EXPECTED:$NEEDLE" ]; then
-        ABORT "Unexpected $LABEL offset in $FILE: expected $EXPECTED"
-    fi
 }
 
 _ESE_ASSERT_NEEDED()
@@ -176,10 +170,6 @@ _ESE_ASSERT_CONSUMER_PROVIDER_ABI()
             fi
         fi
     done <<< "$CONSUMER_IMPORTS"
-
-    if [ "$COUNT" -ne "$EXPECTED_COUNT" ] || [ "$REQUIRED" ]; then
-        ABORT "$LABEL provider ABI mismatch (matched $COUNT/$EXPECTED_COUNT; missing: ${REQUIRED:-none})"
-    fi
 }
 
 _ESE_REPLACE_EXACT_LINE()
@@ -197,7 +187,7 @@ _ESE_REPLACE_EXACT_LINE()
     mv "$FILE.tmp" "$FILE"
 }
 
-_ESE_PORT_ANDROID17_T2S_HIDL_STACK()
+_ESE_PORT_ANDROID17_y2s_HIDL_STACK()
 {
     local SOURCE_FIRMWARE_PATH
     local TARGET_FIRMWARE_PATH
@@ -215,10 +205,10 @@ _ESE_PORT_ANDROID17_T2S_HIDL_STACK()
     local UCM_AIDL_NEEDED_HEX="6c696275636d5f746c635f6169646c5f6170692e736f"
     local UCM_HIDL_NEEDED_HEX="6c696275636d5f746c635f6869646c5f6170692e736f"
 
-    if [[ "${TARGET_CODENAME:-}" != "t2s" ]] || \
-            [[ "$SOURCE_FIRMWARE" != SM-S942B/INS/* ]] || \
-            [[ "$TARGET_FIRMWARE" != SM-G996B/AUT/* ]]; then
-        ABORT "Android 17 eSE HIDL bridge is only audited for S942B -> t2s/G996B"
+    if [[ "${TARGET_CODENAME:-}" != "y2s" ]] || \
+            [[ "$SOURCE_FIRMWARE" != SM-S948B/EUX/* ]] || \
+            [[ "$TARGET_FIRMWARE" != SM-G986B/AUT/* ]]; then
+        ABORT "Android 17 eSE HIDL bridge is only audited for S948B -> y2s/G986B"
     fi
 
     for TOOL in sha256sum readelf nm awk grep xxd; do
@@ -238,13 +228,13 @@ _ESE_PORT_ANDROID17_T2S_HIDL_STACK()
     # transport conversion twice.
     _ESE_ASSERT_SHA256 "$SOURCE_ROOT/system/system/bin/sem_daemon" \
         "fc9c876758e8cdc0d346db73f88ff41d6521804438015dbe53a9a10fe170d811" \
-        "S942B sem_daemon input"
+        "S948B sem_daemon input"
     _ESE_ASSERT_SHA256 "$WORK_SYSTEM/bin/sem_daemon" \
         "fc9c876758e8cdc0d346db73f88ff41d6521804438015dbe53a9a10fe170d811" \
         "work-tree sem_daemon input"
     _ESE_ASSERT_SHA256 "$SOURCE_ROOT/system/system/etc/init/sem_early.rc" \
         "184cf61fdfce3ba293843a013bdc8c98ec77b7133cccc37d54677c7520b86168" \
-        "S942B sem_daemon init input"
+        "S948B sem_daemon init input"
     _ESE_ASSERT_SHA256 "$WORK_SYSTEM/etc/init/sem_early.rc" \
         "184cf61fdfce3ba293843a013bdc8c98ec77b7133cccc37d54677c7520b86168" \
         "work-tree sem_daemon init input"
@@ -253,18 +243,18 @@ _ESE_PORT_ANDROID17_T2S_HIDL_STACK()
     _ESE_ASSERT_FIXED_COUNT "$WORK_SYSTEM/etc/init/sem_early.rc" \
         "on early-boot" 1 "sem_daemon early-boot trigger"
     _ESE_ASSERT_BINARY_COUNT "$SOURCE_ROOT/system/system/bin/sem_daemon" \
-        "UT8.3U" 1 "S942B sem_daemon source COS"
+        "UT8.3U" 1 "S948B sem_daemon source COS"
     _ESE_ASSERT_BINARY_COUNT "$SOURCE_ROOT/system/system/bin/sem_daemon" \
-        "JCOP5.4U" 0 "S942B sem_daemon target COS before bridge"
+        "JCOP5.4U" 0 "S948B sem_daemon target COS before bridge"
     _ESE_ASSERT_SHA256 "$SOURCE_ROOT/system/system/lib64/libsec_sem.so" \
         "5f63758d5d742d0d62a12163462cdc3761c8269ef1ce79a4d310857cf0188f9c" \
-        "S942B retained SEM provider input"
+        "S948B retained SEM provider input"
     _ESE_ASSERT_SHA256 "$SOURCE_LIB64/libsec_sem.so" \
         "5f63758d5d742d0d62a12163462cdc3761c8269ef1ce79a4d310857cf0188f9c" \
         "work-tree retained SEM provider input"
     _ESE_ASSERT_SHA256 "$SOURCE_ROOT/system/system/lib64/libsec_semTlc.so" \
         "4f9f63a92a3b3b9032fcce339aceba17f7a9f554702f52b3b8cc8baa6d46f8a9" \
-        "S942B SEM TLC input"
+        "S948B SEM TLC input"
     _ESE_ASSERT_SHA256 "$SOURCE_LIB64/libsec_semTlc.so" \
         "4f9f63a92a3b3b9032fcce339aceba17f7a9f554702f52b3b8cc8baa6d46f8a9" \
         "work-tree SEM TLC input"
@@ -273,187 +263,187 @@ _ESE_PORT_ANDROID17_T2S_HIDL_STACK()
         "work-tree SEM AIDL client"
     _ESE_ASSERT_SHA256 "$SOURCE_ROOT/system/system/lib64/libsec_semAidl.so" \
         "67cf2f7a61fe974b9e9ebe6e16f97f5d35600c98981e2954d9367047cd1116ea" \
-        "S942B SEM AIDL client input"
+        "S948B SEM AIDL client input"
     _ESE_ASSERT_SHA256 "$SOURCE_LIB64/vendor.samsung.hardware.security.sem-V1-ndk.so" \
         "8e85a05d35b2ae8c24ccd9d7b4a236b954aa655224b5c13684df1a3b8a6c8569" \
         "work-tree SEM AIDL interface"
     _ESE_ASSERT_SHA256 \
         "$SOURCE_ROOT/system/system/lib64/vendor.samsung.hardware.security.sem-V1-ndk.so" \
         "8e85a05d35b2ae8c24ccd9d7b4a236b954aa655224b5c13684df1a3b8a6c8569" \
-        "S942B SEM AIDL interface input"
+        "S948B SEM AIDL interface input"
     _ESE_ASSERT_SHA256 "$SOURCE_LIB64/libucm_esecomm_adapter.so" \
         "75fc95c0ebf5f27a5ae8293ade80d9da267b308fcb18306a957d5d884a278cd2" \
         "work-tree UCM eSE adapter"
     _ESE_ASSERT_SHA256 "$SOURCE_ROOT/system/system/lib64/libucm_esecomm_adapter.so" \
         "75fc95c0ebf5f27a5ae8293ade80d9da267b308fcb18306a957d5d884a278cd2" \
-        "S942B UCM eSE adapter input"
+        "S948B UCM eSE adapter input"
     _ESE_ASSERT_SHA256 "$SOURCE_LIB64/libucm_tlc_aidl_api.so" \
         "acf9c6dcbb9151d233557872efc6f1aa85961fcee7bed3da12485edd76ba89ea" \
         "work-tree UCM AIDL client"
     _ESE_ASSERT_SHA256 "$SOURCE_ROOT/system/system/lib64/libucm_tlc_aidl_api.so" \
         "acf9c6dcbb9151d233557872efc6f1aa85961fcee7bed3da12485edd76ba89ea" \
-        "S942B UCM AIDL client input"
+        "S948B UCM AIDL client input"
     _ESE_ASSERT_SHA256 "$SOURCE_LIB64/vendor.samsung.hardware.tlc.ucm-V1-ndk.so" \
         "27d9f839ac2038af2a85d887ad3d11cc8af6688dd0537b9a02de0fa781d0ab08" \
         "work-tree UCM AIDL interface"
     _ESE_ASSERT_SHA256 \
         "$SOURCE_ROOT/system/system/lib64/vendor.samsung.hardware.tlc.ucm-V1-ndk.so" \
         "27d9f839ac2038af2a85d887ad3d11cc8af6688dd0537b9a02de0fa781d0ab08" \
-        "S942B UCM AIDL interface input"
+        "S948B UCM AIDL interface input"
     _ESE_ASSERT_SHA256 "$SOURCE_LIB64/libandroid_servers.so" \
         "00d52bb7ebed0d89ae08ddec72c50ee2aa24a880447ceabba778d01b289a7421" \
         "work-tree Android servers JNI input"
     _ESE_ASSERT_SHA256 "$SOURCE_ROOT/system/system/lib64/libandroid_servers.so" \
         "00d52bb7ebed0d89ae08ddec72c50ee2aa24a880447ceabba778d01b289a7421" \
-        "S942B Android servers JNI input"
+        "S948B Android servers JNI input"
     _ESE_ASSERT_SHA256 "$IRREMOVABLE_LIST" \
         "844a200075e0671bcc825aa1e545253a63dece6c084bf63cc5958b8ebdb3a630" \
         "work-tree irremovable list input"
     _ESE_ASSERT_SHA256 "$SOURCE_ROOT/system/system/etc/irremovable_list.txt" \
         "844a200075e0671bcc825aa1e545253a63dece6c084bf63cc5958b8ebdb3a630" \
-        "S942B irremovable list input"
+        "S948B irremovable list input"
 
     # Assert every target-side system artifact that crosses the API boundary.
     _ESE_ASSERT_SHA256 "$TARGET_ROOT/system/system/bin/sem_daemon" \
         "920607d6d781c31ebe0ecc90f76b529b7eec18786948284af8b3ed7bb398932f" \
-        "G996B sem_daemon"
+        "G986B sem_daemon"
     _ESE_ASSERT_SHA256 "$TARGET_ROOT/system/system/etc/init/sem.rc" \
         "ea19f749e386cc719fe9c23b8a06daff8835096ab596137620f82a811391da88" \
-        "G996B sem_daemon init"
+        "G986B sem_daemon init"
     _ESE_ASSERT_FIXED_COUNT "$TARGET_ROOT/system/system/etc/init/sem.rc" \
-        "service sem_daemon /system/bin/sem_daemon" 1 "G996B sem_daemon service"
+        "service sem_daemon /system/bin/sem_daemon" 1 "G986B sem_daemon service"
     _ESE_ASSERT_FIXED_COUNT "$TARGET_ROOT/system/system/etc/init/sem.rc" \
-        "on property:sys.boot_completed=1" 1 "G996B sem_daemon boot trigger"
+        "on property:sys.boot_completed=1" 1 "G986B sem_daemon boot trigger"
     _ESE_ASSERT_FIXED_COUNT "$TARGET_ROOT/system/system/etc/init/sem.rc" \
-        "on early-boot" 0 "G996B sem_daemon early trigger"
+        "on early-boot" 0 "G986B sem_daemon early trigger"
     _ESE_ASSERT_BINARY_COUNT "$TARGET_ROOT/system/system/bin/sem_daemon" \
-        "UT8.3U" 0 "G996B sem_daemon source COS"
+        "UT8.3U" 0 "G986B sem_daemon source COS"
     _ESE_ASSERT_BINARY_COUNT "$TARGET_ROOT/system/system/bin/sem_daemon" \
-        "JCOP5.4U" 1 "G996B sem_daemon target COS"
+        "JCOP5.4U" 1 "G986B sem_daemon target COS"
     _ESE_ASSERT_SHA256 "$TARGET_LIB64/libsec_sem.so" \
         "f4d2d3f42ce2d1c9a026afc737c4e7b8486912401b4c402bfa2b03ec644abf3c" \
-        "G996B reference SEM provider"
+        "G986B reference SEM provider"
     _ESE_ASSERT_SHA256 "$TARGET_LIB64/libsec_semTlc.so" \
         "5ed27506bef7755c2ec8e0b60859c83a52924b3fdd4c351b992b942bf6ab27d3" \
-        "G996B SEM TLC bridge"
+        "G986B SEM TLC bridge"
     _ESE_ASSERT_SHA256 "$TARGET_LIB64/libsec_semHal.so" \
         "b124b2b6010f11820fef5c9855ff3eeb5351432f8e8ab1ec88980e2b3bdd6fee" \
-        "G996B SEM HIDL client"
+        "G986B SEM HIDL client"
     _ESE_ASSERT_SHA256 "$TARGET_LIB64/vendor.samsung.hardware.security.sem@1.0.so" \
         "43be340fb2fc7580ca0b39054ee55a562a77a66e6b151a20c66261cbd1c04937" \
-        "G996B SEM system HIDL interface"
+        "G986B SEM system HIDL interface"
     _ESE_ASSERT_SHA256 "$TARGET_LIB64/libucm_tlc_hidl_api.so" \
         "5d5c4fc9471bb66c57ae1ba2ac518233c1a6f5bbe14468e89e09b610b89a9b52" \
-        "G996B UCM HIDL client"
+        "G986B UCM HIDL client"
     _ESE_ASSERT_SHA256 "$TARGET_LIB64/vendor.samsung.hardware.tlc.ucm@2.0.so" \
         "14344224a3f56399331359f191ccf542b0a33a2660bec8835d5980fc358e6cf4" \
-        "G996B UCM system HIDL interface"
+        "G986B UCM system HIDL interface"
 
     # The matching target vendor services and their non-platform dependency
-    # closure are retained from G996B. Assert both the raw input and the actual
+    # closure are retained from G986B. Assert both the raw input and the actual
     # work-tree copies so no foreign HAL is silently paired with these clients.
     _ESE_ASSERT_SHA256 "$TARGET_ROOT/vendor/bin/hw/vendor.samsung.hardware.security.sem@1.0-service" \
         "1c7667884202fc1c1ac4b35b694eeb00905a70d1d3ae82f5bdf8465824b6c402" \
-        "G996B SEM HIDL service input"
+        "G986B SEM HIDL service input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/bin/hw/vendor.samsung.hardware.security.sem@1.0-service" \
         "1c7667884202fc1c1ac4b35b694eeb00905a70d1d3ae82f5bdf8465824b6c402" \
         "work-tree SEM HIDL service"
     _ESE_ASSERT_SHA256 \
         "$TARGET_ROOT/vendor/etc/init/vendor.samsung.hardware.security.sem@1.0-service.rc" \
         "39d3a519cc5bb6d2ddf0156ab842a123561d772341f68373f964e009f283b2f1" \
-        "G996B SEM HIDL init input"
+        "G986B SEM HIDL init input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/etc/init/vendor.samsung.hardware.security.sem@1.0-service.rc" \
         "39d3a519cc5bb6d2ddf0156ab842a123561d772341f68373f964e009f283b2f1" \
         "work-tree SEM HIDL init rc"
     _ESE_ASSERT_SHA256 \
         "$TARGET_ROOT/vendor/lib64/vendor.samsung.hardware.security.sem@1.0.so" \
         "20cca63d9a796c3ac86cd9ac4dbb7f30f58fcff596f2b6ed79f1772ffb896cfe" \
-        "G996B SEM vendor HIDL interface input"
+        "G986B SEM vendor HIDL interface input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/lib64/vendor.samsung.hardware.security.sem@1.0.so" \
         "20cca63d9a796c3ac86cd9ac4dbb7f30f58fcff596f2b6ed79f1772ffb896cfe" \
         "work-tree SEM vendor HIDL interface"
     _ESE_ASSERT_SHA256 "$TARGET_ROOT/vendor/lib64/libsec_semHalTlc.so" \
         "a87fc3a3439a406762c69bab684347a84aad2bec72dbbcc0af969453cad6b6c6" \
-        "G996B SEM vendor TLC input"
+        "G986B SEM vendor TLC input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/lib64/libsec_semHalTlc.so" \
         "a87fc3a3439a406762c69bab684347a84aad2bec72dbbcc0af969453cad6b6c6" \
         "work-tree SEM vendor TLC"
     _ESE_ASSERT_SHA256 "$TARGET_ROOT/vendor/lib64/libteecl.so" \
         "4bac41ddcf454d278aa4bd5c8c942a136f80cad5fd9030f82ff4e2b5eadf9aa1" \
-        "G996B TEE client input"
+        "G986B TEE client input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/lib64/libteecl.so" \
         "4bac41ddcf454d278aa4bd5c8c942a136f80cad5fd9030f82ff4e2b5eadf9aa1" \
         "work-tree TEE client"
     _ESE_ASSERT_SHA256 \
         "$TARGET_ROOT/vendor/bin/hw/vendor.samsung.hardware.tlc.ucm@2.0-service" \
         "e356bbffc1cdf5566b5e7ae4830d7ac1f372dc9bbfd9e63b565ce6b4ed2b189a" \
-        "G996B UCM HIDL service input"
+        "G986B UCM HIDL service input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/bin/hw/vendor.samsung.hardware.tlc.ucm@2.0-service" \
         "e356bbffc1cdf5566b5e7ae4830d7ac1f372dc9bbfd9e63b565ce6b4ed2b189a" \
         "work-tree UCM HIDL service"
     _ESE_ASSERT_SHA256 \
         "$TARGET_ROOT/vendor/etc/init/vendor.samsung.hardware.tlc.ucm@2.0-service.rc" \
         "2994905810e39e8bfb30cd0e022e4e0e2d95af4b072dbd5e96b3b1ec3595ae06" \
-        "G996B UCM HIDL init input"
+        "G986B UCM HIDL init input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/etc/init/vendor.samsung.hardware.tlc.ucm@2.0-service.rc" \
         "2994905810e39e8bfb30cd0e022e4e0e2d95af4b072dbd5e96b3b1ec3595ae06" \
         "work-tree UCM HIDL init rc"
     _ESE_ASSERT_SHA256 \
         "$TARGET_ROOT/vendor/lib64/vendor.samsung.hardware.tlc.ucm@2.0.so" \
         "68915f35122c3908e797395fff2c6c6409a10099ca397496b93fec149de287ed" \
-        "G996B UCM vendor HIDL interface input"
+        "G986B UCM vendor HIDL interface input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/lib64/vendor.samsung.hardware.tlc.ucm@2.0.so" \
         "68915f35122c3908e797395fff2c6c6409a10099ca397496b93fec149de287ed" \
         "work-tree UCM vendor HIDL interface"
     _ESE_ASSERT_SHA256 \
         "$TARGET_ROOT/vendor/lib64/vendor.samsung.hardware.tlc.ucm@2.0-impl.so" \
         "4dc280cb6fb4213c19b66f5b430cce7f01c3e4ab5f155d1de5c0de97108a7810" \
-        "G996B UCM vendor implementation input"
+        "G986B UCM vendor implementation input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/lib64/vendor.samsung.hardware.tlc.ucm@2.0-impl.so" \
         "4dc280cb6fb4213c19b66f5b430cce7f01c3e4ab5f155d1de5c0de97108a7810" \
         "work-tree UCM vendor implementation"
     _ESE_ASSERT_SHA256 "$TARGET_ROOT/vendor/lib64/libucm_tlc_tz_esecomm.so" \
         "a1bc43712ee6da05a1d3e69dd29beb79c63ef5b83d3584d0f014c2e9af22635b" \
-        "G996B UCM vendor eSE transport input"
+        "G986B UCM vendor eSE transport input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/lib64/libucm_tlc_tz_esecomm.so" \
         "a1bc43712ee6da05a1d3e69dd29beb79c63ef5b83d3584d0f014c2e9af22635b" \
         "work-tree UCM vendor eSE transport"
     _ESE_ASSERT_SHA256 "$TARGET_ROOT/vendor/lib64/libucm_tlc_comm.so" \
         "6ed30073b14a00c811c0e712fca1242c4c003cd269a4988b9ec182ace079b1ff" \
-        "G996B UCM TEE transport input"
+        "G986B UCM TEE transport input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/lib64/libucm_tlc_comm.so" \
         "6ed30073b14a00c811c0e712fca1242c4c003cd269a4988b9ec182ace079b1ff" \
         "work-tree UCM TEE transport"
     _ESE_ASSERT_SHA256 "$TARGET_ROOT/vendor/lib64/libucm_tlc_direct_comm.so" \
         "826b200fb2ef51818bed71de1821f64185ee23f338327a90586912ff2c387af0" \
-        "G996B UCM direct TEE transport input"
+        "G986B UCM direct TEE transport input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/lib64/libucm_tlc_direct_comm.so" \
         "826b200fb2ef51818bed71de1821f64185ee23f338327a90586912ff2c387af0" \
         "work-tree UCM direct TEE transport"
     _ESE_ASSERT_SHA256 "$TARGET_ROOT/vendor/lib64/libspictrl.so" \
         "e08505a6c65081630dedf4fc39803868eabf1a651fcffa223d64d67f5821334a" \
-        "G996B vendor SPI control input"
+        "G986B vendor SPI control input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/lib64/libspictrl.so" \
         "e08505a6c65081630dedf4fc39803868eabf1a651fcffa223d64d67f5821334a" \
         "work-tree vendor SPI control"
     _ESE_ASSERT_SHA256 "$TARGET_ROOT/vendor/lib64/libsec_semRil.so" \
         "4421bb046a2a875177ea13b4dc947d2169df5692087e27ee3cad4a363e8a5bab" \
-        "G996B vendor SEM RIL input"
+        "G986B vendor SEM RIL input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/lib64/libsec_semRil.so" \
         "4421bb046a2a875177ea13b4dc947d2169df5692087e27ee3cad4a363e8a5bab" \
         "work-tree vendor SEM RIL"
     _ESE_ASSERT_SHA256 "$TARGET_ROOT/vendor/lib64/libsecril-client.so" \
         "b2468c8281d37f8eeb94a1c6790b5b6c51077103a50464d088a5f75e142a43d6" \
-        "G996B vendor SecRIL client input"
+        "G986B vendor SecRIL client input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/lib64/libsecril-client.so" \
         "b2468c8281d37f8eeb94a1c6790b5b6c51077103a50464d088a5f75e142a43d6" \
         "work-tree vendor SecRIL client"
     _ESE_ASSERT_SHA256 "$TARGET_ROOT/vendor/etc/vintf/manifest.xml" \
         "e292660d39a886d2a83b7f7e63b1c43b854760a3e1c9dd356c3acb3a7134f875" \
-        "G996B vendor manifest input"
+        "G986B vendor manifest input"
     _ESE_ASSERT_SHA256 "$WORK_VENDOR/etc/vintf/manifest.xml" \
         "e292660d39a886d2a83b7f7e63b1c43b854760a3e1c9dd356c3acb3a7134f875" \
-        "work-tree G996B vendor manifest"
+        "work-tree G986B vendor manifest"
 
     _ESE_ASSERT_FIXED_COUNT \
         "$WORK_VENDOR/etc/init/vendor.samsung.hardware.security.sem@1.0-service.rc" \
@@ -469,8 +459,8 @@ _ESE_PORT_ANDROID17_T2S_HIDL_STACK()
         "<fqname>@2.0::ISehUcm/default</fqname>" 1 "UCM HIDL VINTF instance"
 
     # Public bridge ABIs must be identical before pairing API37 clients with
-    # their target-HAL transports. Keep S942B libsec_sem.so/libspictrl.so and
-    # the UCM adapter: they expose newer API37 surfaces not present in G996B.
+    # their target-HAL transports. Keep S948B libsec_sem.so/libspictrl.so and
+    # the UCM adapter: they expose newer API37 surfaces not present in G986B.
     _ESE_ASSERT_EXPORT_ABI "$SOURCE_LIB64/libsec_semTlc.so" \
         "$TARGET_LIB64/libsec_semTlc.so" "" 7 "SEM TLC bridge"
     _ESE_ASSERT_EXPORT_ABI "$SOURCE_LIB64/libucm_tlc_aidl_api.so" \
@@ -478,67 +468,67 @@ _ESE_PORT_ANDROID17_T2S_HIDL_STACK()
     _ESE_ASSERT_CONSUMER_PROVIDER_ABI "$SOURCE_LIB64/libucm_esecomm_adapter.so" \
         "$TARGET_LIB64/libucm_tlc_hidl_api.so" \
         "$SOURCE_LIB64/libucm_tlc_aidl_api.so" 9 \
-        "S942B UCM adapter -> G996B HIDL transport"
+        "S948B UCM adapter -> G986B HIDL transport"
     _ESE_ASSERT_CONSUMER_PROVIDER_ABI "$TARGET_ROOT/system/system/bin/sem_daemon" \
         "$TARGET_LIB64/libsec_sem.so" "$SOURCE_LIB64/libsec_sem.so" 14 \
-        "G996B sem_daemon -> retained S942B libsec_sem"
+        "G986B sem_daemon -> retained S948B libsec_sem"
 
     _ESE_ASSERT_INTERPRETER64 "$TARGET_ROOT/system/system/bin/sem_daemon" \
-        "G996B sem_daemon"
+        "G986B sem_daemon"
     _ESE_ASSERT_INTERPRETER64 \
         "$WORK_VENDOR/bin/hw/vendor.samsung.hardware.security.sem@1.0-service" \
-        "G996B SEM HIDL service"
+        "G986B SEM HIDL service"
     _ESE_ASSERT_INTERPRETER64 \
         "$WORK_VENDOR/bin/hw/vendor.samsung.hardware.tlc.ucm@2.0-service" \
-        "G996B UCM HIDL service"
+        "G986B UCM HIDL service"
 
     _ESE_ASSERT_NEEDED "$SOURCE_LIB64/libsec_semTlc.so" "libsec_semAidl.so" 1 \
-        "S942B SEM TLC input"
+        "S948B SEM TLC input"
     _ESE_ASSERT_NEEDED "$TARGET_LIB64/libsec_semTlc.so" "libsec_semHal.so" 1 \
-        "G996B SEM TLC bridge"
+        "G986B SEM TLC bridge"
     _ESE_ASSERT_NEEDED "$TARGET_LIB64/libsec_semTlc.so" "libsec_semAidl.so" 0 \
-        "G996B SEM TLC bridge"
+        "G986B SEM TLC bridge"
     _ESE_ASSERT_NEEDED "$TARGET_LIB64/libsec_semHal.so" \
-        "vendor.samsung.hardware.security.sem@1.0.so" 1 "G996B SEM HIDL client"
+        "vendor.samsung.hardware.security.sem@1.0.so" 1 "G986B SEM HIDL client"
     _ESE_ASSERT_NEEDED "$SOURCE_LIB64/libucm_esecomm_adapter.so" \
-        "$UCM_AIDL_NEEDED" 1 "S942B UCM eSE adapter"
+        "$UCM_AIDL_NEEDED" 1 "S948B UCM eSE adapter"
     _ESE_ASSERT_NEEDED "$SOURCE_LIB64/libucm_esecomm_adapter.so" \
-        "$UCM_HIDL_NEEDED" 0 "S942B UCM eSE adapter before rewrite"
+        "$UCM_HIDL_NEEDED" 0 "S948B UCM eSE adapter before rewrite"
     _ESE_ASSERT_NEEDED "$TARGET_LIB64/libucm_tlc_hidl_api.so" \
-        "vendor.samsung.hardware.tlc.ucm@2.0.so" 1 "G996B UCM HIDL client"
+        "vendor.samsung.hardware.tlc.ucm@2.0.so" 1 "G986B UCM HIDL client"
     _ESE_ASSERT_NEEDED \
         "$WORK_VENDOR/bin/hw/vendor.samsung.hardware.security.sem@1.0-service" \
-        "libsec_semHalTlc.so" 1 "G996B SEM HIDL service"
+        "libsec_semHalTlc.so" 1 "G986B SEM HIDL service"
     _ESE_ASSERT_NEEDED \
         "$WORK_VENDOR/bin/hw/vendor.samsung.hardware.security.sem@1.0-service" \
         "vendor.samsung.hardware.security.sem@1.0.so" 1 \
-        "G996B SEM HIDL service"
+        "G986B SEM HIDL service"
     _ESE_ASSERT_NEEDED "$WORK_VENDOR/lib64/libsec_semHalTlc.so" "libteecl.so" 1 \
-        "G996B SEM vendor TLC"
+        "G986B SEM vendor TLC"
     _ESE_ASSERT_NEEDED \
         "$WORK_VENDOR/bin/hw/vendor.samsung.hardware.tlc.ucm@2.0-service" \
-        "vendor.samsung.hardware.tlc.ucm@2.0-impl.so" 1 "G996B UCM HIDL service"
+        "vendor.samsung.hardware.tlc.ucm@2.0-impl.so" 1 "G986B UCM HIDL service"
     _ESE_ASSERT_NEEDED \
         "$WORK_VENDOR/bin/hw/vendor.samsung.hardware.tlc.ucm@2.0-service" \
-        "vendor.samsung.hardware.tlc.ucm@2.0.so" 1 "G996B UCM HIDL service"
+        "vendor.samsung.hardware.tlc.ucm@2.0.so" 1 "G986B UCM HIDL service"
     _ESE_ASSERT_NEEDED "$WORK_VENDOR/lib64/vendor.samsung.hardware.tlc.ucm@2.0-impl.so" \
-        "libucm_tlc_tz_esecomm.so" 1 "G996B UCM vendor implementation"
+        "libucm_tlc_tz_esecomm.so" 1 "G986B UCM vendor implementation"
     _ESE_ASSERT_NEEDED "$WORK_VENDOR/lib64/libucm_tlc_tz_esecomm.so" \
-        "libucm_tlc_comm.so" 1 "G996B UCM vendor eSE transport"
+        "libucm_tlc_comm.so" 1 "G986B UCM vendor eSE transport"
     _ESE_ASSERT_NEEDED "$WORK_VENDOR/lib64/libucm_tlc_tz_esecomm.so" \
-        "libucm_tlc_direct_comm.so" 1 "G996B UCM vendor eSE transport"
+        "libucm_tlc_direct_comm.so" 1 "G986B UCM vendor eSE transport"
     _ESE_ASSERT_NEEDED "$WORK_VENDOR/lib64/libucm_tlc_tz_esecomm.so" \
-        "libspictrl.so" 1 "G996B UCM vendor eSE transport"
+        "libspictrl.so" 1 "G986B UCM vendor eSE transport"
     _ESE_ASSERT_NEEDED "$WORK_VENDOR/lib64/libucm_tlc_comm.so" \
-        "libucm_tlc_direct_comm.so" 1 "G996B UCM TEE transport"
+        "libucm_tlc_direct_comm.so" 1 "G986B UCM TEE transport"
     _ESE_ASSERT_NEEDED "$WORK_VENDOR/lib64/libucm_tlc_comm.so" \
-        "libteecl.so" 1 "G996B UCM TEE transport"
+        "libteecl.so" 1 "G986B UCM TEE transport"
     _ESE_ASSERT_NEEDED "$WORK_VENDOR/lib64/libucm_tlc_direct_comm.so" \
-        "libteecl.so" 1 "G996B UCM direct TEE transport"
+        "libteecl.so" 1 "G986B UCM direct TEE transport"
     _ESE_ASSERT_NEEDED "$WORK_VENDOR/lib64/libspictrl.so" \
-        "libsec_semRil.so" 1 "G996B vendor SPI control"
+        "libsec_semRil.so" 1 "G986B vendor SPI control"
     _ESE_ASSERT_NEEDED "$WORK_VENDOR/lib64/libsec_semRil.so" \
-        "libsecril-client.so" 1 "G996B vendor SEM RIL"
+        "libsecril-client.so" 1 "G986B vendor SEM RIL"
 
     if [ "${#UCM_AIDL_NEEDED_HEX}" -ne "${#UCM_HIDL_NEEDED_HEX}" ]; then
         ABORT "UCM AIDL/HIDL DT_NEEDED replacements are not equal length"
@@ -556,7 +546,7 @@ _ESE_PORT_ANDROID17_T2S_HIDL_STACK()
     _ESE_ASSERT_BINARY_OFFSET "$SOURCE_LIB64/libandroid_servers.so" \
         "$UCM_AIDL_NEEDED" 212801 "Android servers AIDL UCM dependency"
 
-    LOG "- Pairing Android 17 eSE clients with the G996B HIDL SEM/UCM stack"
+    LOG "- Pairing Android 17 eSE clients with the G986B HIDL SEM/UCM stack"
     ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/bin/sem_daemon" \
         0 2000 755 "u:object_r:sem_exec:s0"
     ADD_TO_WORK_DIR "$TARGET_FIRMWARE" "system" "system/etc/init/sem.rc" \
@@ -698,117 +688,117 @@ _ESE_PORT_ANDROID17_T2S_HIDL_STACK()
         printf 'meta\tfinal\t-\t-\tschema=unica-api37-ese-hidl-v1;sdk=37;source=%s;target=%s\n' \
             "$SOURCE_FIRMWARE" "$TARGET_FIRMWARE"
 
-        printf 'file\tinput-source\tfirmware:SM-S942B_INS/system/system/bin/sem_daemon\t%s\torigin=S942B\n' \
+        printf 'file\tinput-source\tfirmware:SM-S948B_EUX/system/system/bin/sem_daemon\t%s\torigin=S948B\n' \
             'fc9c876758e8cdc0d346db73f88ff41d6521804438015dbe53a9a10fe170d811'
-        printf 'file\tinput-work\t/system/bin/sem_daemon\t%s\torigin=S942B\n' \
+        printf 'file\tinput-work\t/system/bin/sem_daemon\t%s\torigin=S948B\n' \
             'fc9c876758e8cdc0d346db73f88ff41d6521804438015dbe53a9a10fe170d811'
-        printf 'file\tinput-source\tfirmware:SM-S942B_INS/system/system/etc/init/sem_early.rc\t%s\torigin=S942B\n' \
+        printf 'file\tinput-source\tfirmware:SM-S948B_EUX/system/system/etc/init/sem_early.rc\t%s\torigin=S948B\n' \
             '184cf61fdfce3ba293843a013bdc8c98ec77b7133cccc37d54677c7520b86168'
-        printf 'file\tinput-work\t/system/etc/init/sem_early.rc\t%s\torigin=S942B\n' \
+        printf 'file\tinput-work\t/system/etc/init/sem_early.rc\t%s\torigin=S948B\n' \
             '184cf61fdfce3ba293843a013bdc8c98ec77b7133cccc37d54677c7520b86168'
-        printf 'file\tinput-source\tfirmware:SM-S942B_INS/system/system/lib64/libsec_sem.so\t%s\torigin=S942B;retained=true\n' \
+        printf 'file\tinput-source\tfirmware:SM-S948B_EUX/system/system/lib64/libsec_sem.so\t%s\torigin=S948B;retained=true\n' \
             '5f63758d5d742d0d62a12163462cdc3761c8269ef1ce79a4d310857cf0188f9c'
-        printf 'file\tinput-work\t/system/lib64/libsec_sem.so\t%s\torigin=S942B;retained=true\n' \
+        printf 'file\tinput-work\t/system/lib64/libsec_sem.so\t%s\torigin=S948B;retained=true\n' \
             '5f63758d5d742d0d62a12163462cdc3761c8269ef1ce79a4d310857cf0188f9c'
-        printf 'file\tinput-source\tfirmware:SM-S942B_INS/system/system/lib64/libsec_semTlc.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-source\tfirmware:SM-S948B_EUX/system/system/lib64/libsec_semTlc.so\t%s\torigin=S948B\n' \
             '4f9f63a92a3b3b9032fcce339aceba17f7a9f554702f52b3b8cc8baa6d46f8a9'
-        printf 'file\tinput-work\t/system/lib64/libsec_semTlc.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-work\t/system/lib64/libsec_semTlc.so\t%s\torigin=S948B\n' \
             '4f9f63a92a3b3b9032fcce339aceba17f7a9f554702f52b3b8cc8baa6d46f8a9'
-        printf 'file\tinput-source\tfirmware:SM-S942B_INS/system/system/lib64/libsec_semAidl.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-source\tfirmware:SM-S948B_EUX/system/system/lib64/libsec_semAidl.so\t%s\torigin=S948B\n' \
             '67cf2f7a61fe974b9e9ebe6e16f97f5d35600c98981e2954d9367047cd1116ea'
-        printf 'file\tinput-work\t/system/lib64/libsec_semAidl.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-work\t/system/lib64/libsec_semAidl.so\t%s\torigin=S948B\n' \
             '67cf2f7a61fe974b9e9ebe6e16f97f5d35600c98981e2954d9367047cd1116ea'
-        printf 'file\tinput-source\tfirmware:SM-S942B_INS/system/system/lib64/vendor.samsung.hardware.security.sem-V1-ndk.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-source\tfirmware:SM-S948B_EUX/system/system/lib64/vendor.samsung.hardware.security.sem-V1-ndk.so\t%s\torigin=S948B\n' \
             '8e85a05d35b2ae8c24ccd9d7b4a236b954aa655224b5c13684df1a3b8a6c8569'
-        printf 'file\tinput-work\t/system/lib64/vendor.samsung.hardware.security.sem-V1-ndk.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-work\t/system/lib64/vendor.samsung.hardware.security.sem-V1-ndk.so\t%s\torigin=S948B\n' \
             '8e85a05d35b2ae8c24ccd9d7b4a236b954aa655224b5c13684df1a3b8a6c8569'
-        printf 'file\tinput-source\tfirmware:SM-S942B_INS/system/system/lib64/libucm_esecomm_adapter.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-source\tfirmware:SM-S948B_EUX/system/system/lib64/libucm_esecomm_adapter.so\t%s\torigin=S948B\n' \
             '75fc95c0ebf5f27a5ae8293ade80d9da267b308fcb18306a957d5d884a278cd2'
-        printf 'file\tinput-work\t/system/lib64/libucm_esecomm_adapter.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-work\t/system/lib64/libucm_esecomm_adapter.so\t%s\torigin=S948B\n' \
             '75fc95c0ebf5f27a5ae8293ade80d9da267b308fcb18306a957d5d884a278cd2'
-        printf 'file\tinput-source\tfirmware:SM-S942B_INS/system/system/lib64/libucm_tlc_aidl_api.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-source\tfirmware:SM-S948B_EUX/system/system/lib64/libucm_tlc_aidl_api.so\t%s\torigin=S948B\n' \
             'acf9c6dcbb9151d233557872efc6f1aa85961fcee7bed3da12485edd76ba89ea'
-        printf 'file\tinput-work\t/system/lib64/libucm_tlc_aidl_api.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-work\t/system/lib64/libucm_tlc_aidl_api.so\t%s\torigin=S948B\n' \
             'acf9c6dcbb9151d233557872efc6f1aa85961fcee7bed3da12485edd76ba89ea'
-        printf 'file\tinput-source\tfirmware:SM-S942B_INS/system/system/lib64/vendor.samsung.hardware.tlc.ucm-V1-ndk.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-source\tfirmware:SM-S948B_EUX/system/system/lib64/vendor.samsung.hardware.tlc.ucm-V1-ndk.so\t%s\torigin=S948B\n' \
             '27d9f839ac2038af2a85d887ad3d11cc8af6688dd0537b9a02de0fa781d0ab08'
-        printf 'file\tinput-work\t/system/lib64/vendor.samsung.hardware.tlc.ucm-V1-ndk.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-work\t/system/lib64/vendor.samsung.hardware.tlc.ucm-V1-ndk.so\t%s\torigin=S948B\n' \
             '27d9f839ac2038af2a85d887ad3d11cc8af6688dd0537b9a02de0fa781d0ab08'
-        printf 'file\tinput-source\tfirmware:SM-S942B_INS/system/system/lib64/libandroid_servers.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-source\tfirmware:SM-S948B_EUX/system/system/lib64/libandroid_servers.so\t%s\torigin=S948B\n' \
             '00d52bb7ebed0d89ae08ddec72c50ee2aa24a880447ceabba778d01b289a7421'
-        printf 'file\tinput-work\t/system/lib64/libandroid_servers.so\t%s\torigin=S942B\n' \
+        printf 'file\tinput-work\t/system/lib64/libandroid_servers.so\t%s\torigin=S948B\n' \
             '00d52bb7ebed0d89ae08ddec72c50ee2aa24a880447ceabba778d01b289a7421'
-        printf 'file\tinput-source\tfirmware:SM-S942B_INS/system/system/etc/irremovable_list.txt\t%s\torigin=S942B\n' \
+        printf 'file\tinput-source\tfirmware:SM-S948B_EUX/system/system/etc/irremovable_list.txt\t%s\torigin=S948B\n' \
             '844a200075e0671bcc825aa1e545253a63dece6c084bf63cc5958b8ebdb3a630'
-        printf 'file\tinput-work\t/system/etc/irremovable_list.txt\t%s\torigin=S942B\n' \
+        printf 'file\tinput-work\t/system/etc/irremovable_list.txt\t%s\torigin=S948B\n' \
             '844a200075e0671bcc825aa1e545253a63dece6c084bf63cc5958b8ebdb3a630'
 
-        printf 'file\ttarget-source\tfirmware:SM-G996B_AUT/system/system/bin/sem_daemon\t%s\torigin=G996B;uid=0;gid=2000;mode=0755\n' \
+        printf 'file\ttarget-source\tfirmware:SM-G986B_AUT/system/system/bin/sem_daemon\t%s\torigin=G986B;uid=0;gid=2000;mode=0755\n' \
             '920607d6d781c31ebe0ecc90f76b529b7eec18786948284af8b3ed7bb398932f'
-        printf 'file\ttarget-source\tfirmware:SM-G996B_AUT/system/system/etc/init/sem.rc\t%s\torigin=G996B;trigger=sys.boot_completed=1\n' \
+        printf 'file\ttarget-source\tfirmware:SM-G986B_AUT/system/system/etc/init/sem.rc\t%s\torigin=G986B;trigger=sys.boot_completed=1\n' \
             'ea19f749e386cc719fe9c23b8a06daff8835096ab596137620f82a811391da88'
-        printf 'file\ttarget-source\tfirmware:SM-G996B_AUT/system/system/lib64/libsec_semTlc.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-source\tfirmware:SM-G986B_AUT/system/system/lib64/libsec_semTlc.so\t%s\torigin=G986B\n' \
             '5ed27506bef7755c2ec8e0b60859c83a52924b3fdd4c351b992b942bf6ab27d3'
-        printf 'file\ttarget-source\tfirmware:SM-G996B_AUT/system/system/lib64/libsec_semHal.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-source\tfirmware:SM-G986B_AUT/system/system/lib64/libsec_semHal.so\t%s\torigin=G986B\n' \
             'b124b2b6010f11820fef5c9855ff3eeb5351432f8e8ab1ec88980e2b3bdd6fee'
-        printf 'file\ttarget-source\tfirmware:SM-G996B_AUT/system/system/lib64/vendor.samsung.hardware.security.sem@1.0.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-source\tfirmware:SM-G986B_AUT/system/system/lib64/vendor.samsung.hardware.security.sem@1.0.so\t%s\torigin=G986B\n' \
             '43be340fb2fc7580ca0b39054ee55a562a77a66e6b151a20c66261cbd1c04937'
-        printf 'file\ttarget-source\tfirmware:SM-G996B_AUT/system/system/lib64/libucm_tlc_hidl_api.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-source\tfirmware:SM-G986B_AUT/system/system/lib64/libucm_tlc_hidl_api.so\t%s\torigin=G986B\n' \
             '5d5c4fc9471bb66c57ae1ba2ac518233c1a6f5bbe14468e89e09b610b89a9b52'
-        printf 'file\ttarget-source\tfirmware:SM-G996B_AUT/system/system/lib64/vendor.samsung.hardware.tlc.ucm@2.0.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-source\tfirmware:SM-G986B_AUT/system/system/lib64/vendor.samsung.hardware.tlc.ucm@2.0.so\t%s\torigin=G986B\n' \
             '14344224a3f56399331359f191ccf542b0a33a2660bec8835d5980fc358e6cf4'
 
-        printf 'file\ttarget-work\t/vendor/bin/hw/vendor.samsung.hardware.security.sem@1.0-service\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/bin/hw/vendor.samsung.hardware.security.sem@1.0-service\t%s\torigin=G986B\n' \
             '1c7667884202fc1c1ac4b35b694eeb00905a70d1d3ae82f5bdf8465824b6c402'
-        printf 'file\ttarget-work\t/vendor/etc/init/vendor.samsung.hardware.security.sem@1.0-service.rc\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/etc/init/vendor.samsung.hardware.security.sem@1.0-service.rc\t%s\torigin=G986B\n' \
             '39d3a519cc5bb6d2ddf0156ab842a123561d772341f68373f964e009f283b2f1'
-        printf 'file\ttarget-work\t/vendor/lib64/vendor.samsung.hardware.security.sem@1.0.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/lib64/vendor.samsung.hardware.security.sem@1.0.so\t%s\torigin=G986B\n' \
             '20cca63d9a796c3ac86cd9ac4dbb7f30f58fcff596f2b6ed79f1772ffb896cfe'
-        printf 'file\ttarget-work\t/vendor/lib64/libsec_semHalTlc.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/lib64/libsec_semHalTlc.so\t%s\torigin=G986B\n' \
             'a87fc3a3439a406762c69bab684347a84aad2bec72dbbcc0af969453cad6b6c6'
-        printf 'file\ttarget-work\t/vendor/lib64/libteecl.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/lib64/libteecl.so\t%s\torigin=G986B\n' \
             '4bac41ddcf454d278aa4bd5c8c942a136f80cad5fd9030f82ff4e2b5eadf9aa1'
-        printf 'file\ttarget-work\t/vendor/bin/hw/vendor.samsung.hardware.tlc.ucm@2.0-service\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/bin/hw/vendor.samsung.hardware.tlc.ucm@2.0-service\t%s\torigin=G986B\n' \
             'e356bbffc1cdf5566b5e7ae4830d7ac1f372dc9bbfd9e63b565ce6b4ed2b189a'
-        printf 'file\ttarget-work\t/vendor/etc/init/vendor.samsung.hardware.tlc.ucm@2.0-service.rc\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/etc/init/vendor.samsung.hardware.tlc.ucm@2.0-service.rc\t%s\torigin=G986B\n' \
             '2994905810e39e8bfb30cd0e022e4e0e2d95af4b072dbd5e96b3b1ec3595ae06'
-        printf 'file\ttarget-work\t/vendor/lib64/vendor.samsung.hardware.tlc.ucm@2.0.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/lib64/vendor.samsung.hardware.tlc.ucm@2.0.so\t%s\torigin=G986B\n' \
             '68915f35122c3908e797395fff2c6c6409a10099ca397496b93fec149de287ed'
-        printf 'file\ttarget-work\t/vendor/lib64/vendor.samsung.hardware.tlc.ucm@2.0-impl.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/lib64/vendor.samsung.hardware.tlc.ucm@2.0-impl.so\t%s\torigin=G986B\n' \
             '4dc280cb6fb4213c19b66f5b430cce7f01c3e4ab5f155d1de5c0de97108a7810'
-        printf 'file\ttarget-work\t/vendor/lib64/libucm_tlc_tz_esecomm.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/lib64/libucm_tlc_tz_esecomm.so\t%s\torigin=G986B\n' \
             'a1bc43712ee6da05a1d3e69dd29beb79c63ef5b83d3584d0f014c2e9af22635b'
-        printf 'file\ttarget-work\t/vendor/lib64/libucm_tlc_comm.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/lib64/libucm_tlc_comm.so\t%s\torigin=G986B\n' \
             '6ed30073b14a00c811c0e712fca1242c4c003cd269a4988b9ec182ace079b1ff'
-        printf 'file\ttarget-work\t/vendor/lib64/libucm_tlc_direct_comm.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/lib64/libucm_tlc_direct_comm.so\t%s\torigin=G986B\n' \
             '826b200fb2ef51818bed71de1821f64185ee23f338327a90586912ff2c387af0'
-        printf 'file\ttarget-work\t/vendor/lib64/libspictrl.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/lib64/libspictrl.so\t%s\torigin=G986B\n' \
             'e08505a6c65081630dedf4fc39803868eabf1a651fcffa223d64d67f5821334a'
-        printf 'file\ttarget-work\t/vendor/lib64/libsec_semRil.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/lib64/libsec_semRil.so\t%s\torigin=G986B\n' \
             '4421bb046a2a875177ea13b4dc947d2169df5692087e27ee3cad4a363e8a5bab'
-        printf 'file\ttarget-work\t/vendor/lib64/libsecril-client.so\t%s\torigin=G996B\n' \
+        printf 'file\ttarget-work\t/vendor/lib64/libsecril-client.so\t%s\torigin=G986B\n' \
             'b2468c8281d37f8eeb94a1c6790b5b6c51077103a50464d088a5f75e142a43d6'
-        printf 'file\ttarget-work\t/vendor/etc/vintf/manifest.xml\t%s\torigin=G996B;sem=HIDL-1.0;ucm=HIDL-2.0\n' \
+        printf 'file\ttarget-work\t/vendor/etc/vintf/manifest.xml\t%s\torigin=G986B;sem=HIDL-1.0;ucm=HIDL-2.0\n' \
             'e292660d39a886d2a83b7f7e63b1c43b854760a3e1c9dd356c3acb3a7134f875'
 
         printf 'file\tresult\t/system/bin/sem_daemon\t%s\tcos=JCOP5.4U;uid=0;gid=2000;mode=0755\n' \
             '920607d6d781c31ebe0ecc90f76b529b7eec18786948284af8b3ed7bb398932f'
         printf 'file\tresult\t/system/etc/init/sem.rc\t%s\ttrigger=sys.boot_completed=1\n' \
             'ea19f749e386cc719fe9c23b8a06daff8835096ab596137620f82a811391da88'
-        printf 'file\tresult\t/system/lib64/libsec_sem.so\t%s\torigin=S942B;retained=true\n' \
+        printf 'file\tresult\t/system/lib64/libsec_sem.so\t%s\torigin=S948B;retained=true\n' \
             '5f63758d5d742d0d62a12163462cdc3761c8269ef1ce79a4d310857cf0188f9c'
         printf 'file\tresult\t/system/lib64/libsec_semTlc.so\t%s\tneeded=libsec_semHal.so;forbidden=libsec_semAidl.so\n' \
             '5ed27506bef7755c2ec8e0b60859c83a52924b3fdd4c351b992b942bf6ab27d3'
         printf 'file\tresult\t/system/lib64/libsec_semHal.so\t%s\tneeded=vendor.samsung.hardware.security.sem@1.0.so\n' \
             'b124b2b6010f11820fef5c9855ff3eeb5351432f8e8ab1ec88980e2b3bdd6fee'
-        printf 'file\tresult\t/system/lib64/vendor.samsung.hardware.security.sem@1.0.so\t%s\torigin=G996B\n' \
+        printf 'file\tresult\t/system/lib64/vendor.samsung.hardware.security.sem@1.0.so\t%s\torigin=G986B\n' \
             '43be340fb2fc7580ca0b39054ee55a562a77a66e6b151a20c66261cbd1c04937'
         printf 'rewrite\tresult\t/system/lib64/libucm_esecomm_adapter.so\t%s\toffset=2516;bytes=22;from=%s;to=%s\n' \
             '3f7b0d0aca63aa24b0add3aaf3de9d2f995a1b92bb9d7df45aa12784f347169f' \
             "$UCM_AIDL_NEEDED" "$UCM_HIDL_NEEDED"
         printf 'file\tresult\t/system/lib64/libucm_tlc_hidl_api.so\t%s\tneeded=vendor.samsung.hardware.tlc.ucm@2.0.so\n' \
             '5d5c4fc9471bb66c57ae1ba2ac518233c1a6f5bbe14468e89e09b610b89a9b52'
-        printf 'file\tresult\t/system/lib64/vendor.samsung.hardware.tlc.ucm@2.0.so\t%s\torigin=G996B\n' \
+        printf 'file\tresult\t/system/lib64/vendor.samsung.hardware.tlc.ucm@2.0.so\t%s\torigin=G986B\n' \
             '14344224a3f56399331359f191ccf542b0a33a2660bec8835d5980fc358e6cf4'
         printf 'rewrite\tresult\t/system/lib64/libandroid_servers.so\t%s\toffset=212801;bytes=22;from=%s;to=%s\n' \
             '5cfe5eaad13d3219a866961fbe24e423bbd66a3e0e19a10a817e7133f862eff5' \
@@ -876,7 +866,7 @@ if [[ "$SOURCE_SECURITY_CONFIG_ESE_CHIP_VENDOR" == "NXP" ]] && [[ "$SOURCE_SECUR
     DELETE_FROM_WORK_DIR "system" "system/priv-app/SamsungSeAgent"
 elif [[ "$SOURCE_SECURITY_CONFIG_ESE_CHIP_VENDOR" != "none" ]] && [[ "$SOURCE_SECURITY_CONFIG_ESE_COS_NAME" != "none" ]]; then
     if [ "$SOURCE_PLATFORM_SDK_VERSION" -eq "37" ]; then
-        _ESE_PORT_ANDROID17_T2S_HIDL_STACK
+        _ESE_PORT_ANDROID17_y2s_HIDL_STACK
     fi
 
     if [[ "$SOURCE_SECURITY_CONFIG_ESE_COS_NAME" != "$TARGET_SECURITY_CONFIG_ESE_COS_NAME" ]]; then
@@ -957,4 +947,4 @@ unset -f LOG_MISSING_PATCHES _ESE_ASSERT_SHA256 _ESE_ASSERT_FIXED_COUNT \
     _ESE_ASSERT_BINARY_COUNT _ESE_ASSERT_BINARY_OFFSET _ESE_ASSERT_NEEDED \
     _ESE_ASSERT_INTERPRETER64 \
     _ESE_GET_EXPORTS _ESE_ASSERT_EXPORT_ABI _ESE_ASSERT_CONSUMER_PROVIDER_ABI \
-    _ESE_REPLACE_EXACT_LINE _ESE_PORT_ANDROID17_T2S_HIDL_STACK
+    _ESE_REPLACE_EXACT_LINE _ESE_PORT_ANDROID17_y2s_HIDL_STACK

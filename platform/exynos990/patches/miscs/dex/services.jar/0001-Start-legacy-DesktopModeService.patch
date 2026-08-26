@@ -1,0 +1,54 @@
+From 5b6e2ce5c97f60a280676c89e9f5f67d3b3e3a5c Mon Sep 17 00:00:00 2001
+From: UN1CA <noreply@un1ca.dev>
+Date: Fri, 10 Jul 2026 20:42:00 +0200
+Subject: [PATCH] Start legacy DesktopModeService when backported
+
+The One UI 9 source retains the public desktop-mode API but no longer starts
+the legacy server-side Samsung DeX service required by the Exynos2100 vendor
+display stack. Start the target service in a guarded block so an unexpected
+legacy incompatibility cannot prevent system_server from finishing boot.
+
+---
+ smali/com/android/server/SystemServer.smali | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/smali/com/android/server/SystemServer.smali b/smali/com/android/server/SystemServer.smali
+--- a/smali/com/android/server/SystemServer.smali
++++ b/smali/com/android/server/SystemServer.smali
+@@ -7205,6 +7205,34 @@
+ 
+     invoke-static {v0, v9}, Lcom/android/server/SystemServerInitThreadPool;->submit(Ljava/lang/Runnable;Ljava/lang/String;)Ljava/util/concurrent/Future;
+ 
++    const-string/jumbo v0, "StartLegacyDesktopModeService"
++
++    invoke-virtual {v2, v0}, Lcom/android/server/utils/TimingsTraceAndSlog;->traceBegin(Ljava/lang/String;)V
++
++    :try_start_legacy_desktop_mode
++    iget-object v0, v1, Lcom/android/server/SystemServer;->mSystemServiceManager:Lcom/android/server/SystemServiceManager;
++
++    const-class v8, Lcom/android/server/desktopmode/DesktopModeService$Lifecycle;
++
++    invoke-virtual {v0, v8}, Lcom/android/server/SystemServiceManager;->startService(Ljava/lang/Class;)Lcom/android/server/SystemService;
++
++    :try_end_legacy_desktop_mode
++    .catch Ljava/lang/Throwable; {:try_start_legacy_desktop_mode .. :try_end_legacy_desktop_mode} :catch_legacy_desktop_mode
++
++    goto :goto_legacy_desktop_mode_complete
++
++    :catch_legacy_desktop_mode
++    move-exception v0
++
++    const-string/jumbo v8, "SystemServer"
++
++    const-string/jumbo v9, "Legacy DeX service failed to start"
++
++    invoke-static {v8, v9, v0}, Landroid/util/Slog;->w(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I
++
++    :goto_legacy_desktop_mode_complete
++    invoke-virtual {v2}, Landroid/util/TimingsTraceLog;->traceEnd()V
++
+     const-string/jumbo v0, "StartInputManager"
+ 
+     invoke-virtual {v2, v0}, Lcom/android/server/utils/TimingsTraceAndSlog;->traceBegin(Ljava/lang/String;)V
+-- 
+2.43.0

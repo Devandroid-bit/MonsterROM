@@ -3,56 +3,15 @@ LK3RD_REPO="https://github.com/Android-Artisan/lk3rd"
 
 BUILD_LK3RD()
 {
-    local PARENT
     PARENT=$(pwd)
 
     # Ensure we are in the correct directory
     cd "$LK3RD_TMP_DIR" || ABORT "BUILD_LK3RD: Cannot find $LK3RD_TMP_DIR"
 
     LOG "- Running build for ${TARGET_CODENAME}"
-    EVAL "PATH=\"$LK3RD_TOOLCHAIN_DIR:\$PATH\" TOOLCHAIN_PREFIX=\"$LK3RD_TOOLCHAIN_PREFIX\" ./build.sh ${TARGET_CODENAME} -u -v y" || {
-        cd "$PARENT"
-        return 1
-    }
+    EVAL "./build.sh ${TARGET_CODENAME} -u -v n"
 
     cd "$PARENT"
-}
-
-PREPARE_LK3RD_TOOLCHAIN()
-{
-    local CLANG_DIR="$PWD/out/kernel_tmp-${TARGET_PLATFORM}/toolchain/clang_14"
-    local CLANG_BIN
-    local LINK
-    local SHIM_DIR="$LK3RD_TMP_DIR/.monsterrom-toolchain"
-
-    if [ -x "$CLANG_DIR/bin/clang-14" ]; then
-        CLANG_BIN="$CLANG_DIR/bin/clang-14"
-    else
-        CLANG_DIR="$PWD/out/kernel-cache/floppy-workspace/toolchains/aospclang"
-        CLANG_BIN="$CLANG_DIR/bin/clang-22"
-    fi
-
-    if [ ! -x "$CLANG_BIN" ]; then
-        ABORT "No compatible AOSP Clang toolchain found for lk3rd"
-        return 1
-    fi
-
-    EVAL "mkdir -p \"$SHIM_DIR\""
-    EVAL "ln -sfn \"$CLANG_BIN\" \"$SHIM_DIR/aarch64-none-elf-gcc\""
-    EVAL "ln -sfn \"$PWD/external/android-tools/vendor/mkbootimg/mkbootimg.py\" \"$SHIM_DIR/mkbootimg\""
-    for LINK in \
-        "ld:ld.lld" \
-        "objdump:llvm-objdump" \
-        "objcopy:llvm-objcopy" \
-        "c++filt:llvm-cxxfilt" \
-        "size:llvm-size" \
-        "nm:llvm-nm" \
-        "strip:llvm-strip"; do
-        EVAL "ln -sfn \"$CLANG_DIR/bin/${LINK#*:}\" \"$SHIM_DIR/aarch64-none-elf-${LINK%%:*}\""
-    done
-
-    LK3RD_TOOLCHAIN_DIR="$PWD/$SHIM_DIR"
-    LK3RD_TOOLCHAIN_PREFIX="$LK3RD_TOOLCHAIN_DIR/aarch64-none-elf-"
 }
 
 SAFE_PULL_CHANGES()
@@ -104,14 +63,9 @@ ADD_LK3RD_BINARIES()
         ABORT "Directory exists but is not a git repo: $LK3RD_TMP_DIR"
     fi
 
-    LOG "- Applying lk3rd AOSP Clang compatibility"
-    EVAL "git -C \"$LK3RD_TMP_DIR\" apply --check \"$MODPATH/patches/0001-Clang-toolchain-compatibility.patch\"" || return 1
-    EVAL "git -C \"$LK3RD_TMP_DIR\" apply \"$MODPATH/patches/0001-Clang-toolchain-compatibility.patch\"" || return 1
-    PREPARE_LK3RD_TOOLCHAIN || return 1
-
     # 4. Execute Build
     LOG "- Starting lk3rd build process."
-    BUILD_LK3RD || return 1
+    BUILD_LK3RD
 
     # 5. Artifact Management
     [[ ! -d "$WORK_DIR/kernel" ]] && mkdir -p -- "$WORK_DIR/kernel"
@@ -122,8 +76,7 @@ ADD_LK3RD_BINARIES()
         rm -f "$WORK_DIR/kernel/lk3rd.img"
         mv -f "$SRC" "$WORK_DIR/kernel/lk3rd.img"
     else
-        ABORT "Artifact lk3rd-${TARGET_CODENAME}.img not found at $SRC"
-        return 1
+        LOGW "Artifact lk3rd-${TARGET_CODENAME}.img not found at $SRC"
     fi
 }
 

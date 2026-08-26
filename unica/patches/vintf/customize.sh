@@ -40,6 +40,13 @@ VALIDATE_FRAMEWORK_MATRIX()
     fi
 }
 
+# Restore the exact FCM level declared by the target vendor manifest first.
+# The Android 17 source may not ship this older framework matrix.
+TARGET_FCM_LEVEL="$(grep -o -m 1 'target-level="[0-9]*"' "$WORK_DIR/vendor/etc/vintf/manifest.xml" 2> /dev/null | \
+                    cut -d '"' -f 2)"
+if [ "$TARGET_FCM_LEVEL" ]; then
+    RESTORE_TARGET_FCM "$TARGET_FCM_LEVEL"
+fi
 RESTORE_TARGET_FCM "5"
 RESTORE_TARGET_FCM "6"
 

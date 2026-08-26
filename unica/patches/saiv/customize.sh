@@ -171,12 +171,63 @@ if [ "$SOURCE_PLATFORM_SDK_VERSION" -ge 37 ]; then
         fi
     fi
 
-    # Android 17's Photo Editor native library explicitly retains
-    # /hs_segmenter/hs_segmenter.info as a compatibility fallback.
-    VALIDATE_INFO_MODELS \
-        "$WORK_DIR/vendor/etc/saiv/image_understanding/db/hs_segmenter/hs_segmenter.info"
-    VALIDATE_PORTABLE_TFLITE \
-        "$WORK_DIR/vendor/etc/saiv/image_understanding/db/hs_segmenter/hs_segmenter.tflite"
+    # Photo Editor "oneUI-full-release"/"genAI-full-release" flavor models.
+    # Android 17 uses four versioned files instead of the legacy pair.
+    if [ -f "$WORK_DIR/system/system/priv-app/PhotoEditor_Full/PhotoEditor_Full.apk" ] || \
+            [ -f "$WORK_DIR/system/system/priv-app/PhotoEditor_AIFull/PhotoEditor_AIFull.apk" ]; then
+        if [ ! -d "$WORK_DIR/vendor/etc/saiv/image_understanding/db/hs_segmenter" ] || \
+                [ "$TARGET_PLATFORM_SDK_VERSION" -lt "$SOURCE_PLATFORM_SDK_VERSION" ]; then
+            if [ -d "$WORK_DIR/vendor/etc/saiv/image_understanding/db/hs_segmenter" ]; then
+                DELETE_FROM_WORK_DIR "vendor" "etc/saiv/image_understanding/db/hs_segmenter"
+            fi
+            SOURCE_HS_SEGMENTER_DIR="$SOURCE_FIRMWARE_ROOT/vendor/etc/saiv/image_understanding/db/hs_segmenter"
+            if [ -s "$SOURCE_HS_SEGMENTER_DIR/hs_segmenter.info" ] && \
+                    [ -s "$SOURCE_HS_SEGMENTER_DIR/hs_segmenter.tflite" ]; then
+                ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" \
+                    "etc/saiv/image_understanding/db/hs_segmenter/hs_segmenter.info" \
+                    0 0 644 "u:object_r:vendor_configs_file:s0"
+                ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" \
+                    "etc/saiv/image_understanding/db/hs_segmenter/hs_segmenter.tflite" \
+                    0 0 644 "u:object_r:vendor_configs_file:s0"
+            elif [ -s "$SOURCE_HS_SEGMENTER_DIR/12-23_PhotoEditor_SuggestErases_HumanSeg.info" ] && \
+                    [ -s "$SOURCE_HS_SEGMENTER_DIR/12-23_PhotoEditor_SuggestErases_v1.10.0_HumanSeg.tflite" ] && \
+                    [ -s "$SOURCE_HS_SEGMENTER_DIR/12-39_PhotoEditor_SuggestErases_BGPclassifier.info" ] && \
+                    [ -s "$SOURCE_HS_SEGMENTER_DIR/12-39_PhotoEditor_SuggestErases_v1.10.1_BGPclassifier.tflite" ]; then
+                ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "vendor" \
+                    "etc/saiv/image_understanding/db/hs_segmenter" \
+                    0 0 755 "u:object_r:vendor_configs_file:s0"
+            else
+                ABORT "Source Photo Editor human-segmentation model set is missing"
+            fi
+            unset SOURCE_HS_SEGMENTER_DIR
+        fi
+
+        HS_SEGMENTER_DIR="$WORK_DIR/vendor/etc/saiv/image_understanding/db/hs_segmenter"
+        if [ -s "$HS_SEGMENTER_DIR/hs_segmenter.info" ] && \
+                [ -s "$HS_SEGMENTER_DIR/hs_segmenter.tflite" ]; then
+            VALIDATE_INFO_MODELS "$HS_SEGMENTER_DIR/hs_segmenter.info"
+            VALIDATE_PORTABLE_TFLITE "$HS_SEGMENTER_DIR/hs_segmenter.tflite"
+        elif [ -s "$HS_SEGMENTER_DIR/12-23_PhotoEditor_SuggestErases_HumanSeg.info" ] && \
+                [ -s "$HS_SEGMENTER_DIR/12-23_PhotoEditor_SuggestErases_v1.10.0_HumanSeg.tflite" ] && \
+                [ -s "$HS_SEGMENTER_DIR/12-39_PhotoEditor_SuggestErases_BGPclassifier.info" ] && \
+                [ -s "$HS_SEGMENTER_DIR/12-39_PhotoEditor_SuggestErases_v1.10.1_BGPclassifier.tflite" ]; then
+            VALIDATE_INFO_MODELS \
+                "$HS_SEGMENTER_DIR/12-23_PhotoEditor_SuggestErases_HumanSeg.info"
+            VALIDATE_INFO_MODELS \
+                "$HS_SEGMENTER_DIR/12-39_PhotoEditor_SuggestErases_BGPclassifier.info"
+            VALIDATE_PORTABLE_TFLITE \
+                "$HS_SEGMENTER_DIR/12-23_PhotoEditor_SuggestErases_v1.10.0_HumanSeg.tflite"
+            VALIDATE_PORTABLE_TFLITE \
+                "$HS_SEGMENTER_DIR/12-39_PhotoEditor_SuggestErases_v1.10.1_BGPclassifier.tflite"
+        else
+            ABORT "No valid Photo Editor human-segmentation model set"
+        fi
+        unset HS_SEGMENTER_DIR
+    else
+        if [ -d "$WORK_DIR/vendor/etc/saiv/image_understanding/db/hs_segmenter" ]; then
+            DELETE_FROM_WORK_DIR "vendor" "etc/saiv/image_understanding/db/hs_segmenter"
+        fi
+    fi
 
     # The Android 17 PetService requires libPetDetector_v1 plus the new model
     # contract. The target vendor has neither, so keep the capability disabled.
@@ -225,9 +276,23 @@ if [ "$SOURCE_PLATFORM_SDK_VERSION" -ge 37 ]; then
         ABORT "Failed to install Android 17 ImageCropper model"
     fi
 
-    # libStride in Android 17 still names the target's TFLite models and searches
-    # this directory. Preserve the Exynos 2100 set instead of replacing it.
-    for MODEL_FILE in mSTR_Arabic.tflite mSTR_Latin.tflite mSTR_CraftBPN_Refiner.tflite; do
+    # SEC_PRODUCT_FEATURE_CAMERA_CONFIG_STRIDE_OCR_VERSION
+    SOURCE_STRIDE_DIR="$SOURCE_FIRMWARE_ROOT/system/system/saiv/textrecognition/stride"
+    if [ ! -d "$SOURCE_STRIDE_DIR" ]; then
+        ABORT "Android 17 STRIDE model directory is missing"
+    fi
+    # Android 17 libStride uses the portable TFLite refiner named TextBPN_Rfn.
+    # CraftBPN_Refiner is a vendor-only DLC from another model contract and must
+    # not be substituted for this model on the Exynos 2100 target.
+    for MODEL_FILE in mSTR_Arabic.tflite mSTR_Latin.tflite mSTR_TextBPN_Rfn.tflite; do
+        VALIDATE_PORTABLE_TFLITE "$SOURCE_STRIDE_DIR/$MODEL_FILE"
+    done
+    if [ -d "$WORK_DIR/system/system/saiv/textrecognition" ]; then
+        DELETE_FROM_WORK_DIR "system" "system/saiv/textrecognition"
+    fi
+    ADD_TO_WORK_DIR "$SOURCE_FIRMWARE" "system" "system/saiv/textrecognition" \
+        0 0 755 "u:object_r:system_file:s0"
+    for MODEL_FILE in mSTR_Arabic.tflite mSTR_Latin.tflite mSTR_TextBPN_Rfn.tflite; do
         VALIDATE_PORTABLE_TFLITE \
             "$WORK_DIR/system/system/saiv/textrecognition/stride/$MODEL_FILE"
     done
@@ -439,5 +504,5 @@ unset SOURCE_FIRMWARE_PATH TARGET_FIRMWARE_PATH SOURCE_FIRMWARE_ROOT TARGET_FIRM
     SOURCE_CAMERA_CONFIG_DOCUMENT_DEWARP_VERSION TARGET_CAMERA_CONFIG_DOCUMENT_DEWARP_VERSION \
     TARGET_SAIV_CONFIG_MIDAS UNIFIED_INFO TARGET_AIC_DETECTOR TARGET_AIC_CLASSIFIER \
     SOURCE_DEWARP_INFO TARGET_DEWARP_MODEL WORK_DEWARP_INFO SOURCE_IMAGE_CROPPER_MODEL \
-    MODEL_FILE
+    SOURCE_STRIDE_DIR MODEL_FILE
 unset -f VALIDATE_INFO_MODELS VALIDATE_PORTABLE_TFLITE REMOVE_FLOATING_FEATURE_TOKEN

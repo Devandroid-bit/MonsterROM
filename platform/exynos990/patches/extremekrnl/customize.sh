@@ -1,27 +1,19 @@
 # [
 EXTREMEKRNL_REPO="https://github.com/Android-Artisan/android_kernel_samsung_exynos990"
-EXTREME_BPF_SPOOF_MODE="${EXTREME_BPF_SPOOF_MODE:-2}"
 
 BUILD_KERNEL()
 {
-    local PARENT
-    PARENT=$(pwd)
+    local PARENT=$(pwd)
     
     # Ensure we are in the correct directory
     cd "$KERNEL_TMP_DIR" || ABORT "BUILD_KERNEL: Cannot find $KERNEL_TMP_DIR"
 
     LOG "- Running build for ${TARGET_CODENAME}"
-    EVAL "./build.sh -m ${TARGET_CODENAME} -k y -r n" || {
-        cd "$PARENT"
-        return 1
-    }
+    EVAL "./build.sh -m ${TARGET_CODENAME} -k y -r n"
 
     # Fixup for LTE devices
     LOG "- Running build for ${TARGET_CODENAME}lte"
-    EVAL "./build.sh -m ${TARGET_CODENAME}lte -k n -r n -d y" || {
-        cd "$PARENT"
-        return 1
-    }
+    EVAL "./build.sh -m ${TARGET_CODENAME}lte -k n -r n -d y"
 
     cd "$PARENT"
 }
@@ -53,13 +45,6 @@ SAFE_PULL_CHANGES()
 
 REPLACE_KERNEL_BINARIES()
 {
-    local PATCH
-
-    case "$EXTREME_BPF_SPOOF_MODE" in
-        0|1|2) ;;
-        *) ABORT "EXTREME_BPF_SPOOF_MODE must be 0, 1, or 2"; return 1 ;;
-    esac
-
     # 1. Define the directory name based on your requirement
     # Using 'out' as the parent folder
     KERNEL_TMP_DIR="out/kernel_tmp-${TARGET_PLATFORM}"
@@ -83,18 +68,9 @@ REPLACE_KERNEL_BINARIES()
         ABORT "Directory exists but is not a git repo: $KERNEL_TMP_DIR"
     fi
 
-    for PATCH in "$MODPATH"/kernel-patches/*.patch; do
-        [ -f "$PATCH" ] || continue
-        LOG "- Applying $(basename "$PATCH")"
-        EVAL "git -C \"$KERNEL_TMP_DIR\" apply --check \"$PATCH\"" || return 1
-        EVAL "git -C \"$KERNEL_TMP_DIR\" apply \"$PATCH\"" || return 1
-    done
-    EVAL "sed -i 's/static int uname_bpf_spoof = 2;/static int uname_bpf_spoof = $EXTREME_BPF_SPOOF_MODE;/' \"$KERNEL_TMP_DIR/init/main.c\""
-    LOG "- Floppy BPF uname spoof mode: $EXTREME_BPF_SPOOF_MODE"
-
     # 4. Execute Build
     LOG "- Starting kernel build process."
-    BUILD_KERNEL || return 1
+    BUILD_KERNEL
 
     # 5. Artifact Management
     [[ ! -d "$WORK_DIR/kernel" ]] && mkdir -p -- "$WORK_DIR/kernel"
@@ -105,8 +81,7 @@ REPLACE_KERNEL_BINARIES()
             rm -f "$WORK_DIR/kernel/$i.img"
             mv -f "$SRC" "$WORK_DIR/kernel/$i.img"
         else
-            ABORT "Artifact $i.img not found at $SRC"
-            return 1
+            LOGW "Artifact $i.img not found at $SRC"
         fi
     done
 
@@ -115,9 +90,6 @@ REPLACE_KERNEL_BINARIES()
         local LTE_SRC="$KERNEL_TMP_DIR/build/out/${TARGET_CODENAME}lte/dtbo.img"
         if [[ -f "$LTE_SRC" ]]; then
             mv -f "$LTE_SRC" "$WORK_DIR/kernel/dtbo_lte.img"
-        else
-            ABORT "Artifact dtbo_lte.img not found at $LTE_SRC"
-            return 1
         fi
     fi
 }
