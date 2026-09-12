@@ -63,8 +63,8 @@ jobs:
         run: |
           set -e
 
-          SOURCE_DIR="source-repo/platforms/exynos9825"
-          DEST_DIR="platforms/exynos9825"
+          SOURCE_DIR="source-repo/platform/exynos9825"
+          DEST_DIR="platform/exynos9825"
 
           if [ ! -d "$SOURCE_DIR" ]; then
             echo "::error::Source directory does not exist: $SOURCE_DIR"
@@ -77,10 +77,10 @@ jobs:
           echo "Creating destination directory..."
           mkdir -p "$DEST_DIR"
 
-          echo "Copying platforms/exynos9825..."
+          echo "Copying platform/exynos9825..."
           rsync -a --delete "$SOURCE_DIR/" "$DEST_DIR/"
 
-          echo "platforms/exynos9825 imported successfully."
+          echo "platform/exynos9825 imported successfully."
 
       - name: Check imported files
         run: |
@@ -88,12 +88,12 @@ jobs:
           find target -type f | wc -l
 
           echo "Exynos9825 files:"
-          find platforms/exynos9825 -type f | wc -l
+          find platform/exynos9825 -type f | wc -l
 
       - name: Check for changes
         id: changes
         run: |
-          git add -A target platforms/exynos9825
+          git add -A target platform/exynos9825
 
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
